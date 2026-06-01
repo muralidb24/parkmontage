@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Community Parking</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ── Reset & base ── */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#f0f0ed;font-family:system-ui,-apple-system,sans-serif}
+textarea{font-family:inherit}
+
+/* ── Phone shell ── */
+.phone{max-width:390px;margin:0 auto;background:#f0f0ed;min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+/* ── Status bar ── */
+.statusbar{height:44px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:12px;font-weight:500;border-bottom:0.5px solid rgba(0,0,0,0.08);flex-shrink:0}
+
+/* ── Header ── */
+.header{background:#fff;padding:14px 20px 12px;border-bottom:0.5px solid rgba(0,0,0,0.08);flex-shrink:0}
+.header h1{font-size:21px;font-weight:600;color:#111;letter-spacing:-0.3px}
+.header p{font-size:12px;color:#888;margin-top:2px}
+
+/* ── Scrollable content ── */
+.content{flex:1;overflow-y:auto;padding:14px 14px 90px}
+
+/* ── Bottom tab bar ── */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:390px;background:#fff;border-top:0.5px solid rgba(0,0,0,0.08);display:flex;padding:8px 0 24px;z-index:100}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:5px 0;border:none;background:none;color:#aaa;font-size:10px;position:relative}
+.tab.active{color:#1a9e75}
+.tab i{font-size:22px}
+.tab-badge{position:absolute;top:2px;right:calc(50% - 18px);background:#e24b4a;color:#fff;font-size:9px;font-weight:600;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.08);padding:14px 16px;margin-bottom:10px}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.card-title{font-size:15px;font-weight:600;color:#111;letter-spacing:-0.2px}
+.card-sub{font-size:12px;color:#888;margin-top:1px}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:0.01em}
+.badge-available{background:#e1f5ee;color:#0a6e50}
+.badge-inuse{background:#faeeda;color:#7a4a0a}
+.badge-unavailable{background:#f0f0ed;color:#666}
+.badge-pending{background:#e6f1fb;color:#185fa5}
+.badge-approved{background:#eaf3de;color:#3b6d11}
+.badge-declined{background:#fcebeb;color:#a32d2d}
+.badge-released{background:#f0f0ed;color:#666}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);background:transparent;font-size:13px;font-weight:500;cursor:pointer;color:#111;transition:background 0.12s,transform 0.1s}
+.btn:hover{background:rgba(0,0,0,0.04)}
+.btn:active{transform:scale(0.97)}
+.btn:disabled{opacity:0.45;cursor:not-allowed}
+.btn-primary{background:#1a9e75;color:#fff;border-color:#1a9e75}
+.btn-primary:hover{background:#0f7a5a}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn-danger{border-color:#c0392b;color:#c0392b}
+.btn-danger:hover{background:#fcebeb}
+.btn-block{width:100%;justify-content:center}
+
+/* ── Divider ── */
+.divider{height:0.5px;background:rgba(0,0,0,0.07);margin:10px 0}
+
+/* ── Meta rows ── */
+.meta-row{display:flex;align-items:center;gap:6px;font-size:12px;color:#777;margin-top:4px}
+.meta-row i{font-size:14px;flex-shrink:0}
+
+/* ── Form inputs ── */
+.input-group{margin-bottom:14px}
+.input-group label{display:block;font-size:12px;font-weight:500;color:#666;margin-bottom:5px}
+.input-group input,.input-group select,.input-group textarea{width:100%;padding:10px 12px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.2);background:#fff;font-size:14px;color:#111;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+.input-group input:focus,.input-group select:focus,.input-group textarea:focus{border-color:#1a9e75;box-shadow:0 0 0 3px rgba(26,158,117,0.12)}
+.input-group textarea{resize:none;line-height:1.5}
+
+/* ── Two-column grid ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── Section labels ── */
+.section-label{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin:16px 0 8px}
+
+/* ── Notification / info banners ── */
+.banner{border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:8px;align-items:flex-start}
+.banner i{font-size:15px;margin-top:1px;flex-shrink:0}
+.banner p{font-size:12px;line-height:1.5}
+.banner-green{background:#e1f5ee;border:0.5px solid #9fe1cb}
+.banner-green i,.banner-green p{color:#085041}
+.banner-blue{background:#e6f1fb;border:0.5px solid #b5d4f4}
+.banner-blue i,.banner-blue p{color:#0c447c}
+.banner-amber{background:#faeeda;border:0.5px solid #fac775}
+.banner-amber i,.banner-amber p{color:#633806}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:52px 20px;color:#bbb}
+.empty-state i{font-size:44px;margin-bottom:12px;display:block}
+.empty-state p{font-size:14px;line-height:1.6;color:#aaa}
+
+/* ── Avatar ── */
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+
+/* ── Toggle switch ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.toggle{width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
+.toggle.on{background:#1a9e75}
+.toggle.off{background:#ddd}
+.toggle:disabled{opacity:0.4;cursor:not-allowed}
+.toggle::after{content:'';position:absolute;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left 0.18s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.on::after{left:23px}
+.toggle.off::after{left:3px}
+
+/* ── Messages / chat ── */
+.msg-bubble{padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;max-width:82%;margin-bottom:2px}
+.msg-out{background:#1a9e75;color:#fff;margin-left:auto;border-bottom-right-radius:4px}
+.msg-in{background:#efefec;color:#111;border-bottom-left-radius:4px}
+.msg-time{font-size:10px;color:#bbb;text-align:center;margin:6px 0 10px}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;border-radius:22px 22px 0 0;padding:20px 20px 36px;width:390px;max-height:85vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 18px}
+
+/* ── Spot badge ── */
+.spot-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:#e6f1fb;color:#185fa5}
+
+/* ── Auth screens ── */
+.auth-screen{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:32px 28px;background:#fff;max-width:390px;margin:0 auto}
+.auth-logo{font-size:32px;margin-bottom:8px}
+.auth-title{font-size:26px;font-weight:700;color:#111;letter-spacing:-0.5px;margin-bottom:6px}
+.auth-sub{font-size:14px;color:#888;margin-bottom:32px;line-height:1.5}
+.auth-link{color:#1a9e75;font-size:13px;cursor:pointer;font-weight:500;background:none;border:none;padding:0}
+
+/* ── Loading spinner ── */
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+.spinner-dark{border-color:rgba(0,0,0,0.1);border-top-color:#1a9e75}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Toast ── */
+.toast{position:fixed;top:56px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:400;white-space:nowrap;max-width:340px;text-align:center;pointer-events:none}
+
+/* ── Loading screen ── */
+.loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fff}
+.loading-screen p{font-size:14px;color:#aaa}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ─────────────────────────────────────────────
+//  CONFIGURATION — replace with your values
+// ─────────────────────────────────────────────
+console.log('Community Parking app version: 2.5 — email enabled');
+const SUPABASE_URL = 'https://uioehziiyopvhudqvenc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpb2VoemlpeW9wdmh1ZHF2ZW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTQ0MzYsImV4cCI6MjA5NDgzMDQzNn0.Sj9gRR7b7pJFEfP4kTXdBGDyFSCxTijz5Oq4LA_4AYo';
+const COMMUNITY_CODE = 'MAPLE2025'; // Change this to your community's code
+console.log('APP VERSION: 7 — email notifications enabled');
+
+// ─────────────────────────────────────────────
+//  Auth token helper — reads directly from localStorage
+// ─────────────────────────────────────────────
+function getToken() {
+  try {
+    const stored = localStorage.getItem('parkmontage-auth');
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    return parsed?.access_token || null;
+  } catch(e) { return null; }
+}
+
+function getStoredUser() {
+  try {
+    const stored = localStorage.getItem('parkmontage-auth');
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    const now = Math.floor(Date.now() / 1000);
+    if (parsed?.expires_at && parsed.expires_at < now) return null;
+    return parsed?.user || null;
+  } catch(e) { return null; }
+}
+
+// ─────────────────────────────────────────────
+//  Direct REST API helper — bypasses Supabase client
+// ─────────────────────────────────────────────
+async function dbFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + (token || SUPABASE_ANON_KEY),
+    'Content-Type': 'application/json',
+    'Prefer': options.prefer || '',
+    ...(options.headers || {})
+  };
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  if (options.returnSingle) {
+    const data = await res.json();
+    return Array.isArray(data) ? data[0] || null : data;
+  }
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+//  Supabase client (kept for auth only)
+// ─────────────────────────────────────────────
+const { createClient } = window.supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    storage: window.localStorage,
+    storageKey: 'parkmontage-auth',
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  }
+});
+
+const { useState, useEffect, useRef, useCallback } = React;
+const h = React.createElement;
+
+// ─────────────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────────────
+const fmt = d => {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[+m-1]} ${+day}`;
+};
+
+const initials = name => name ? name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : '?';
+
+const avatarColors = [
+  ['#e1f5ee','#0a6e50'],['#e6f1fb','#185fa5'],['#eeedfe','#3c3489'],
+  ['#faeeda','#7a4a0a'],['#faece7','#7a2a10'],
+];
+
+const overlaps = (s,e,fs,fe) => s <= fe && e >= fs;
+
+// Strip street type suffix (Rd, Ln, St, Ave, Dr, Blvd, Ct, Pl, Way, Ter, etc.)
+const shortAddress = (address) => {
+  if (!address) return '';
+  return address.replace(/\s+(Road|Rd|Lane|Ln|Street|St|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Court|Ct|Place|Pl|Way|Terrace|Ter|Circle|Cir|Trail|Trl|Run|Loop)\.?$/i, '');
+};
+
+const todayStr = () => {
+  // Use EST timezone to avoid date showing as yesterday during early morning hours
+  const now = new Date();
+  const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const y = est.getFullYear();
+  const m = String(est.getMonth() + 1).padStart(2, '0');
+  const d = String(est.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+};
+
+// ─────────────────────────────────────────────
+//  Avatar component
+// ─────────────────────────────────────────────
+function Avatar({ name, size=34 }) {
+  const idx = name ? name.charCodeAt(0) % avatarColors.length : 0;
+  const [bg, fg] = avatarColors[idx];
+  return h('div',{className:'avatar',style:{width:size,height:size,background:bg,color:fg,fontSize:size*0.33+'px'}}, initials(name));
+}
+
+// ─────────────────────────────────────────────
+//  Toast
+// ─────────────────────────────────────────────
+function Toast({ msg }) {
+  return msg ? h('div',{className:'toast'}, msg) : null;
+}
+
+// ─────────────────────────────────────────────
+//  Auth: Login screen
+// ─────────────────────────────────────────────
+function LoginScreen({ onSwitch }) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+
+  const send = async () => {
+    if (!email.trim()) return;
+    setLoading(true); setError('');
+    const { error: err } = await db.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: 'https://muralidb24.github.io/parkmontage' }
+    });
+    setLoading(false);
+    if (err) { setError(err.message); return; }
+    setSent(true);
+  };
+
+  if (sent) return h('div',{className:'auth-screen'},
+    h('div',{className:'auth-logo'},'📬'),
+    h('h1',{className:'auth-title'},'Check your email'),
+    h('p',{className:'auth-sub'},`We sent a magic link to ${email}. Tap it to sign in — no password needed.`),
+    h('button',{className:'btn',style:{marginTop:8},onClick:()=>setSent(false)},'Use a different email')
+  );
+
+  return h('div',{className:'auth-screen'},
+    h('div',{className:'auth-logo'},'🅿️'),
+    h('h1',{className:'auth-title'},'Community\nParking'),
+    h('p',{className:'auth-sub'},'Sign in with your email. We\'ll send you a magic link — no password needed.'),
+    h('div',{className:'input-group'},
+      h('label',null,'Email address'),
+      h('input',{type:'email',placeholder:'you@example.com',value:email,onChange:e=>setEmail(e.target.value),
+        onKeyDown:e=>e.key==='Enter'&&send()})
+    ),
+    error && h('p',{style:{color:'#c0392b',fontSize:13,marginBottom:12}},error),
+    h('button',{className:'btn btn-primary btn-block',onClick:send,disabled:loading||!email.trim()},
+      loading ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-send'}),
+      loading ? 'Sending...' : 'Send magic link'
+    ),
+    h('div',{style:{marginTop:20,textAlign:'center'}},
+      h('span',{style:{fontSize:13,color:'#aaa'}},"New here? "),
+      h('button',{className:'auth-link',onClick:onSwitch},'Create an account')
+    )
+  );
+}
+
+// ─────────────────────────────────────────────
+//  Auth: Signup screen
+// ─────────────────────────────────────────────
+function SignupScreen({ onSwitch, userEmail, onComplete }) {
+  const [name, setName] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    if (!name.trim()||!street.trim()||!number.trim()||!code.trim()) {
+      setError('Please fill in all fields.'); return;
+    }
+    if (code.trim().toUpperCase() !== COMMUNITY_CODE) {
+      setError('Invalid community code. Please check with your community admin.'); return;
+    }
+    setLoading(true); setError('');
+    const address = `${number.trim()} ${street.trim()}`;
+    const { data, error: err } = await db.from('homes').insert({
+      address,
+      owner_name: name.trim(),
+      owner_email: userEmail,
+    }).select().single();
+    setLoading(false);
+    if (err) { setError(err.message); return; }
+    onComplete(data);
+  };
+
+  return h('div',{className:'auth-screen'},
+    h('div',{className:'auth-logo'},'🏠'),
+    h('h1',{className:'auth-title'},'Create account'),
+    h('p',{className:'auth-sub',style:{marginBottom:24}},'Tell us about your home so neighbors can find your spaces.'),
+    h('div',{className:'input-group'},
+      h('label',null,'Your full name'),
+      h('input',{type:'text',placeholder:'Jane Smith',value:name,onChange:e=>setName(e.target.value)})
+    ),
+    h('div',{className:'row2'},
+      h('div',{className:'input-group'},
+        h('label',null,'Street number'),
+        h('input',{type:'text',placeholder:'12',value:number,onChange:e=>setNumber(e.target.value)})
+      ),
+      h('div',{className:'input-group'},
+        h('label',null,'Street name'),
+        h('input',{type:'text',placeholder:'Maple Lane',value:street,onChange:e=>setStreet(e.target.value)})
+      )
+    ),
+    h('div',{className:'input-group'},
+      h('label',null,'Community access code'),
+      h('input',{type:'text',placeholder:'Enter code',value:code,onChange:e=>setCode(e.target.value),
+        style:{letterSpacing:'0.1em',fontWeight:500}})
+    ),
+    error && h('p',{style:{color:'#c0392b',fontSize:13,marginBottom:12}},error),
+    h('button',{className:'btn btn-primary btn-block',onClick:submit,disabled:loading},
+      loading ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-check'}),
+      loading ? 'Creating account...' : 'Create account'
+    ),
+    h('div',{style:{marginTop:20,textAlign:'center'}},
+      h('span',{style:{fontSize:13,color:'#aaa'}},'Already have an account? '),
+      h('button',{className:'auth-link',onClick:onSwitch},'Sign in')
+    )
+  );
+}
+
+// ─────────────────────────────────────────────
+//  Find Space tab
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  Email helper — uses Supabase SMTP via Edge Function
+//  Falls back silently if not configured
+// ─────────────────────────────────────────────
+async function sendEmail({ to, subject, html }) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ to, subject, html })
+    });
+    if (!response.ok) {
+      console.warn('Email send failed:', await response.text());
+    }
+  } catch (err) {
+    console.warn('Email send error:', err);
+  }
+}
+
+function FindSpaceTab({ myHome, showToast }) {
+  const [fromDate, setFrom] = useState('');
+  const [toDate, setTo] = useState('');
+
+  const updateFrom = (val) => { 
+    setFrom(val); 
+    setResults(null);
+    // If to date is now earlier than from date, clear it
+    if (toDate && toDate < val) setTo('');
+  };
+  const updateTo = (val) => { setTo(val); setResults(null); };
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [reqMsg, setReqMsg] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const search = async () => {
+    if (!fromDate || !toDate) { showToast('Please select both dates.'); return; }
+    if (toDate < fromDate) { showToast('To date cannot be earlier than From date.'); return; }
+    setLoading(true);
+    try {
+      // Fetch available spaces covering requested dates via direct REST
+      const data = await dbFetch(
+        'spaces?select=*,homes(*)&state=eq.available&home_id=neq.' + myHome.id +
+        '&from_date=lte.' + fromDate + '&to_date=gte.' + toDate
+      );
+      // Filter out spaces already requested
+      const mySessions = await dbFetch(
+        'sessions?select=space_id&renter_home_id=eq.' + myHome.id +
+        '&status=in.("pending","approved","inuse")'
+      );
+      const mySpaceIds = new Set((Array.isArray(mySessions)?mySessions:[]).map(s=>s.space_id));
+      setResults((Array.isArray(data)?data:[]).filter(sp=>!mySpaceIds.has(sp.id)));
+    } catch(err) {
+      showToast('Error searching spaces');
+      console.error('Search error:', err);
+    }
+    setLoading(false);
+  };
+
+  const sendRequests = async () => {
+    const selectedSpaces = results.filter(sp => selected[sp.id]);
+    if (selectedSpaces.length === 0) return;
+    setSubmitting(true);
+
+    // Group by provider so we send one email per provider
+    const byProvider = {};
+    for (const sp of selectedSpaces) {
+      if (!byProvider[sp.home_id]) byProvider[sp.home_id] = [];
+      byProvider[sp.home_id].push(sp);
+    }
+
+    // Create a session and message for each selected space
+    for (const sp of selectedSpaces) {
+      const { data: sess, error: sErr } = await db.from('sessions').insert({
+        space_id: sp.id,
+        renter_home_id: myHome.id,
+        provider_home_id: sp.home_id,
+        from_date: fromDate,
+        to_date: toDate,
+        status: 'pending',
+      }).select().single();
+      if (sErr) { console.error('Session insert error:', sErr); continue; }
+      await db.from('messages').insert({
+        session_id: sess.id,
+        sender_home_id: myHome.id,
+        body: reqMsg || 'Hi! I would like to use your ' + sp.side + ' parking space from ' + fmt(fromDate) + ' to ' + fmt(toDate) + '.',
+      });
+    }
+
+    // Send one email per provider listing all their requested spaces
+    for (const [homeId, spaces] of Object.entries(byProvider)) {
+      const { data: provider } = await db
+        .from('homes').select('owner_name, owner_email').eq('id', homeId).single();
+      if (provider?.owner_email) {
+        const spaceList = spaces.map(sp => sp.side + ' spot').join(' and ');
+        await sendEmail({
+          to: provider.owner_email,
+          subject: 'New parking space request',
+          html: '<p>Hi ' + provider.owner_name + ',</p>' +
+            '<p><strong>' + myHome.owner_name + '</strong> at ' + shortAddress(myHome.address) + ' has requested your <strong>' + spaceList + '</strong>.</p>' +
+            '<p><strong>Dates:</strong> ' + fmt(fromDate) + ' - ' + fmt(toDate) + '</p>' +
+            '<p>' + (reqMsg || '') + '</p>' +
+            '<p>Please open the ParkMontage app to approve or decline.</p>' +
+            '<p>- ParkMontage</p>'
+        });
+      }
+    }
+
+    setSubmitting(false);
+    setShowModal(false);
+    setSelected({});
+    setReqMsg('');
+    setResults(null);
+    const count = selectedSpaces.length;
+    showToast(count + ' request' + (count > 1 ? 's' : '') + ' sent!');
+  };
+
+  return h('div',null,
+    h('div',{className:'card',style:{marginBottom:14}},
+      h('div',{className:'row2'},
+        h('div',{className:'input-group',style:{marginBottom:0}},
+          h('label',null,'From date'),
+          h('input',{type:'date',value:fromDate,min:todayStr(),onChange:e=>updateFrom(e.target.value)})
+        ),
+        h('div',{className:'input-group',style:{marginBottom:0}},
+          h('label',null,'To date'),
+          h('input',{type:'date',value:toDate,min:fromDate||todayStr(),onChange:e=>updateTo(e.target.value),disabled:!fromDate})
+        )
+      ),
+      h('div',{style:{marginTop:12}},
+        h('button',{className:'btn btn-primary btn-block',onClick:search,disabled:loading||!fromDate||!toDate},
+          loading ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-search'}),
+          loading ? 'Searching...' : 'Find available spaces'
+        )
+      )
+    ),
+
+    results === null ? null :
+    results.length === 0 ?
+    h('div',{className:'empty-state'},
+      h('i',{className:'ti ti-parking-off'}),
+      h('p',null,'No spaces available for these dates.\nCheck back later or try different dates.')
+    ) :
+    h('div',null,
+      h('div',{className:'section-label'},`${results.length} space${results.length!==1?'s':''} available`),
+      results.map(sp => {
+        const isChecked = !!selected[sp.id];
+        const addr = shortAddress(sp.homes.address);
+        return h('div',{
+          key:sp.id,
+          className:'card',
+          style:{padding:'10px 14px',cursor:'pointer',borderColor:isChecked?'#1a9e75':'rgba(0,0,0,0.08)',background:isChecked?'#f0faf6':'#fff'},
+          onClick:()=>setSelected(s=>({...s,[sp.id]:!s[sp.id]}))
+        },
+          h('div',{style:{display:'flex',alignItems:'center',gap:10}},
+            h('div',{style:{
+              width:20,height:20,borderRadius:5,border:`2px solid ${isChecked?'#1a9e75':'#ccc'}`,
+              background:isChecked?'#1a9e75':'transparent',display:'flex',alignItems:'center',
+              justifyContent:'center',flexShrink:0,transition:'all 0.15s'
+            }},
+              isChecked && h('i',{className:'ti ti-check',style:{color:'#fff',fontSize:13}})
+            ),
+            h(Avatar,{name:sp.homes.owner_name,size:32}),
+            h('div',{style:{flex:1,minWidth:0}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                h('span',{style:{fontSize:14,fontWeight:600,color:'#111'}},addr),
+                h('span',{className:'spot-badge'},sp.side)
+              ),
+              h('div',{style:{fontSize:11,color:'#aaa',marginTop:1}},sp.homes.owner_name)
+            )
+          )
+        );
+      }),
+      Object.values(selected).some(Boolean) && h('div',{style:{
+        position:'fixed',bottom:72,left:'50%',transform:'translateX(-50%)',
+        width:358,zIndex:150,padding:'0 16px'
+      }},
+        h('button',{
+          className:'btn btn-primary btn-block',
+          style:{boxShadow:'0 4px 16px rgba(26,158,117,0.35)',borderRadius:14,padding:'13px'},
+          onClick:()=>setShowModal(true)
+        },
+          h('i',{className:'ti ti-send'}),
+          `Request ${Object.values(selected).filter(Boolean).length} space${Object.values(selected).filter(Boolean).length>1?'s':''}`
+        )
+      )
+    ),
+
+    showModal && h('div',{className:'modal-overlay',onClick:e=>{if(e.target===e.currentTarget)setShowModal(false)}},
+      h('div',{className:'modal'},
+        h('div',{className:'modal-handle'}),
+        h('h2',{style:{fontSize:17,fontWeight:600,marginBottom:3}},
+          'Request ' + Object.values(selected).filter(Boolean).length + ' parking space' + (Object.values(selected).filter(Boolean).length > 1 ? 's' : '')
+        ),
+        h('p',{style:{fontSize:13,color:'#888',marginBottom:14}},
+          fmt(fromDate) + ' - ' + fmt(toDate) + ' · 6AM start to 6PM end'
+        ),
+        h('div',{className:'input-group'},
+          h('label',null,'Message to owner(s)'),
+          h('textarea',{rows:4,placeholder:"Hi! I'd love to use your space for the requested dates...",
+            value:reqMsg,onChange:e=>setReqMsg(e.target.value)})
+        ),
+        h('div',{className:'banner banner-blue',style:{marginBottom:14}},
+          h('i',{className:'ti ti-info-circle'}),
+          h('p',null,'Your message will be sent to each space owner. They can approve or decline individually.')
+        ),
+        h('div',{style:{display:'flex',gap:8}},
+          h('button',{className:'btn',style:{flex:1,justifyContent:'center'},onClick:()=>setShowModal(false)},'Cancel'),
+          h('button',{className:'btn btn-primary',style:{flex:1,justifyContent:'center'},onClick:sendRequests,disabled:submitting},
+            submitting ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-send'}),
+            submitting ? 'Sending...' : 'Send request'
+          )
+        )
+      )
+    )
+  );
+}
+
+// ─────────────────────────────────────────────
+//  My Sessions tab
+// ─────────────────────────────────────────────
+function MySessionsTab({ myHome, showToast, onOpenChat, unreadSessions }) {
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      // Step 1: fetch sessions using direct REST
+      const sessData = await dbFetch(
+        'sessions?select=*,spaces(*)&renter_home_id=eq.' + myHome.id +
+        '&status=in.("pending","approved","inuse","released_by_renter","released")' +
+        '&order=created_at.desc'
+      );
+      const sessions = Array.isArray(sessData) ? sessData : [];
+
+      // Step 2: fetch provider home details
+      const providerIds = [...new Set(sessions.map(s=>s.provider_home_id).filter(Boolean))];
+      let providerMap = {};
+      if (providerIds.length > 0) {
+        const homes = await dbFetch('homes?id=in.(' + providerIds.join(',') + ')');
+        (Array.isArray(homes)?homes:[]).forEach(h => { providerMap[h.id] = h; });
+      }
+
+      // Step 3: attach provider to each session
+      const enriched = sessions.map(s => ({
+        ...s,
+        provider: providerMap[s.provider_home_id] || null
+      }));
+
+      setSessions(enriched);
+    } catch(err) {
+      console.error('Load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  },[myHome.id]);
+
+  useEffect(()=>{ load(); },[load]);
+
+  // Real-time updates + polling fallback
+  useEffect(()=>{
+    // Real-time subscription
+    const channel = db.channel('my-sessions-'+myHome.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:'sessions'},
+        ()=>load()
+      ).subscribe();
+    // Poll every 5 seconds as fallback
+    const interval = setInterval(()=>load(), 5000);
+    return ()=>{ db.removeChannel(channel); clearInterval(interval); };
+  },[myHome.id, load]);
+
+  const release = async (sess) => {
+    await db.from('sessions').update({status:'released_by_renter'}).eq('id',sess.id);
+    await db.from('messages').insert({
+      session_id: sess.id,
+      sender_home_id: myHome.id,
+      body: 'I have removed my car from your space. Please confirm the space is vacated. Thank you for sharing!',
+    });
+    // Fetch provider details and send email notification
+    const { data: provider } = await db
+      .from('homes')
+      .select('owner_name, owner_email')
+      .eq('id', sess.provider_home_id)
+      .single();
+    if (provider?.owner_email) {
+      await sendEmail({
+        to: provider.owner_email,
+        subject: 'Parking space has been released',
+        html: `<p>Hi ${provider.owner_name},</p>
+          <p><strong>${myHome.owner_name}</strong> has removed their car from your 
+          <strong>${sess.spaces?.side} parking space</strong>.</p>
+          <p>Please verify the space is clear, then open the Community Parking app 
+          and confirm the space has been vacated.</p>
+          <p>— Community Parking</p>`
+      });
+    }
+    showToast('Release notified — waiting for owner to confirm.');
+    load();
+  };
+
+  if (loading) return h('div',{style:{textAlign:'center',padding:'48px 20px'}},h('div',{className:'spinner spinner-dark',style:{margin:'0 auto'}}));
+
+  const active = sessions.filter(s=>['pending','approved','inuse','released_by_renter'].includes(s.status));
+  const past = sessions.filter(s=>s.status==='released');
+
+  if (sessions.length===0) return h('div',{className:'empty-state'},
+    h('i',{className:'ti ti-car'}),
+    h('p',null,'No active parking sessions.\nUse Find Space to request a neighbor\'s spot.')
+  );
+
+  return h('div',null,
+    h('div',{className:'banner banner-green'},
+      h('i',{className:'ti ti-bell'}),
+      h('p',null,'You\'ll receive email reminders one day before your session starts, one day before it ends, and on the last day.')
+    ),
+    active.length>0 && h('div',null,
+      h('div',{className:'section-label'},'Active'),
+      active.map(s => {
+        const statusBadge = s.status==='pending'?'badge-pending':s.status==='inuse'?'badge-inuse':s.status==='released_by_renter'?'badge-amber':'badge-approved';
+        const statusLabel = s.status==='pending'?'Awaiting approval':s.status==='inuse'?'In use':s.status==='released_by_renter'?'Awaiting confirmation':'Approved';
+        return h('div',{key:s.id,className:'card'},
+          h('div',{className:'card-header'},
+            h('div',{style:{display:'flex',gap:10,alignItems:'center'}},
+              h(Avatar,{name:s.provider?.owner_name}),
+              h('div',null,
+                h('div',{className:'card-title'},s.provider?.address),
+                h('div',{className:'card-sub'},s.provider?.owner_name)
+              )
+            ),
+            h('span',{className:`badge ${statusBadge}`},statusLabel)
+          ),
+          h('div',{className:'divider'}),
+          h('div',{className:'meta-row'},h('i',{className:'ti ti-parking'}),`${s.spaces?.side} spot`),
+          h('div',{className:'meta-row'},h('i',{className:'ti ti-calendar'}),`${fmt(s.from_date)} – ${fmt(s.to_date)}`),
+          h('div',{className:'meta-row'},h('i',{className:'ti ti-clock'}),`6AM ${fmt(s.from_date)} · until 6PM ${fmt(s.to_date)}`),
+          h('div',{style:{display:'flex',gap:8,marginTop:10}},
+            h('button',{
+              className:'btn btn-sm',
+              style:{position:'relative'},
+              onClick:()=>onOpenChat(s)
+            },
+              h('i',{className:'ti ti-messages'}),
+              'Messages',
+              unreadSessions && unreadSessions.has(s.id) && h('span',{style:{
+                position:'absolute',top:-4,right:-4,width:8,height:8,
+                borderRadius:'50%',background:'#e24b4a',border:'2px solid #fff'
+              }})
+            ),
+            s.status==='inuse' && h('button',{className:'btn btn-sm btn-danger',onClick:()=>release(s)},
+              h('i',{className:'ti ti-key'}),'Release space'
+            )
+          )
+        );
+      })
+    ),
+    past.length>0 && h('div',null,
+      h('div',{className:'section-label'},'Past'),
+      past.map(s => h('div',{key:s.id,className:'card',style:{opacity:0.7}},
+        h('div',{className:'card-header'},
+          h('div',{style:{display:'flex',gap:10,alignItems:'center'}},
+            h(Avatar,{name:s.provider?.owner_name}),
+            h('div',null,
+              h('div',{className:'card-title'},s.provider?.address),
+              h('div',{className:'card-sub'},s.provider?.owner_name)
+            )
+          ),
+          h('span',{className:'badge badge-released'},'Released')
+        ),
+        h('div',{className:'meta-row',style:{marginTop:6}},h('i',{className:'ti ti-calendar'}),`${fmt(s.from_date)} – ${fmt(s.to_date)}`),
+        h('div',{style:{marginTop:8}},
+          h('button',{
+            className:'btn btn-sm',
+            style:{position:'relative'},
+            onClick:()=>onOpenChat(s)
+          },
+            h('i',{className:'ti ti-messages'}),
+            'View messages',
+            unreadSessions && unreadSessions.has(s.id) && h('span',{style:{
+              position:'absolute',top:-4,right:-4,width:8,height:8,
+              borderRadius:'50%',background:'#e24b4a',border:'2px solid #fff'
+            }})
+          )
+        )
+      ))
+    )
+  );
+}
+
+// ─────────────────────────────────────────────
+//  My Spaces tab
+// ─────────────────────────────────────────────
+function MySpacesTab({ myHome, showToast, onOpenChat, unreadSessions }) {
+  const [spaces, setSpaces] = useState([]);
+  const [pendingSessions, setPending] = useState([]);
+  const [activeSessions, setActive] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const [editFrom, setEditFrom] = useState('');
+  const [editTo, setEditTo] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      // Step 1: fetch spaces via direct REST
+      const sp = await dbFetch('spaces?home_id=eq.' + myHome.id + '&order=side');
+
+      // Step 2: fetch pending sessions
+      const pendData = await dbFetch(
+        'sessions?select=*,spaces(*)&provider_home_id=eq.' + myHome.id + '&status=eq.pending'
+      );
+
+      // Step 3: fetch active sessions
+      const actData = await dbFetch(
+        'sessions?select=*,spaces(*)&provider_home_id=eq.' + myHome.id +
+        '&status=in.("approved","inuse","released_by_renter")'
+      );
+
+      // Step 4: fetch renter home details
+      const allSessions = [...(Array.isArray(pendData)?pendData:[]), ...(Array.isArray(actData)?actData:[])];
+      const renterIds = [...new Set(allSessions.map(s=>s.renter_home_id).filter(Boolean))];
+      let renterMap = {};
+      if (renterIds.length > 0) {
+        const homes = await dbFetch('homes?id=in.(' + renterIds.join(',') + ')');
+        (Array.isArray(homes)?homes:[]).forEach(h => { renterMap[h.id] = h; });
+      }
+
+      // Step 5: attach renter to each session
+      const enrich = s => ({ ...s, renter: renterMap[s.renter_home_id] || null });
+
+      setSpaces(Array.isArray(sp)?sp:[]);
+      setPending((Array.isArray(pendData)?pendData:[]).map(enrich));
+      setActive((Array.isArray(actData)?actData:[]).map(enrich));
+    } catch(err) {
+      console.error('MySpacesTab load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  },[myHome.id]);
+
+  useEffect(()=>{ load(); },[load]);
+
+  useEffect(()=>{
+    // Real-time subscription
+    const channel = db.channel('my-spaces-sessions-'+myHome.id)
+      .on('postgres_changes',{event:'*',schema:'public',table:'sessions'},
+        ()=>load()
+      ).subscribe();
+    // Poll every 5 seconds as fallback
+    const interval = setInterval(()=>load(), 5000);
+    return ()=>{ db.removeChannel(channel); clearInterval(interval); };
+  },[myHome.id, load]);
+
+  const toggleSpace = async (sp) => {
+    if (sp.state==='available') {
+      await db.from('spaces').update({state:'unavailable',from_date:null,to_date:null}).eq('id',sp.id);
+    } else if (sp.state==='unavailable') {
+      setEditing(sp.id); setEditFrom(''); setEditTo('');
+      return;
+    }
+    load();
+  };
+
+  const saveAvailability = async (spaceId) => {
+    if (!editFrom||!editTo) { showToast('Please select both dates.'); return; }
+    const { error } = await db.from('spaces')
+      .update({state:'available', from_date:editFrom, to_date:editTo})
+      .eq('id', spaceId);
+    if (error) {
+      console.error('Save availability error:', error);
+      showToast('Error saving — please try again.');
+      return;
+    }
+    setEditing(null);
+    showToast('Availability saved!');
+    load();
+  };
+
+  const approve = async (sess) => {
+    await db.from('sessions').update({status:'inuse'}).eq('id',sess.id);
+    await db.from('spaces').update({state:'inuse'}).eq('id',sess.space_id);
+    // Add approval message to chat thread
+    await db.from('messages').insert({
+      session_id: sess.id,
+      sender_home_id: myHome.id,
+      body: `Your parking space request has been approved! The ${sess.spaces?.side} spot at ${myHome.address} is yours from ${fmt(sess.from_date)} to ${fmt(sess.to_date)}. Available from 6AM on the first day until 6PM on the last day.`,
+    });
+    // Send email notification to renter
+    if (sess.renter?.owner_email) {
+      await sendEmail({
+        to: sess.renter.owner_email,
+        subject: 'Your parking request has been approved!',
+        html: `<p>Hi ${sess.renter?.owner_name},</p>
+          <p>Great news! Your request for the <strong>${sess.spaces?.side} parking spot 
+          at ${myHome.address}</strong> has been approved.</p>
+          <p><strong>Dates:</strong> ${fmt(sess.from_date)} – ${fmt(sess.to_date)}<br>
+          <strong>Available:</strong> From 6AM on ${fmt(sess.from_date)} until 6PM on ${fmt(sess.to_date)}</p>
+          <p>Please open the Community Parking app to view your session details.</p>
+          <p>— ${myHome.owner_name}</p>`
+      });
+    }
+    showToast('Approved! Renter has been notified.'); load();
+  };
+
+  const decline = async (sess) => {
+    await db.from('sessions').update({status:'declined'}).eq('id',sess.id);
+    await db.from('messages').insert({
+      session_id: sess.id,
+      sender_home_id: myHome.id,
+      body: 'Sorry, the space is no longer available for those dates.',
+    });
+    showToast('Request declined.'); load();
+  };
+
+  const confirmVacated = async (sess) => {
+    await db.from('sessions').update({status:'released'}).eq('id',sess.id);
+    await db.from('spaces').update({state:'unavailable',from_date:null,to_date:null}).eq('id',sess.space_id);
+    await db.from('messages').insert({
+      session_id: sess.id,
+      sender_home_id: myHome.id,
+      body: 'Confirmed — space has been vacated. Thanks for using it and for being a great neighbor!',
+    });
+    showToast('Space marked as vacated and unavailable.'); load();
+  };
+
+  if (loading) return h('div',{style:{textAlign:'center',padding:'48px 20px'}},h('div',{className:'spinner spinner-dark',style:{margin:'0 auto'}}));
+
+  return h('div',null,
+    pendingSessions.length>0 && h('div',null,
+      h('div',{className:'section-label'},'Pending requests'),
+      pendingSessions.map(s => h('div',{key:s.id,className:'card',style:{borderColor:'#b5d4f4'}},
+        h('div',{className:'card-header'},
+          h('div',{style:{display:'flex',gap:10,alignItems:'center'}},
+            h(Avatar,{name:s.renter?.owner_name}),
+            h('div',null,
+              h('div',{className:'card-title'},s.renter?.owner_name),
+              h('div',{className:'card-sub'},s.renter?.address)
+            )
+          ),
+          h('span',{className:'badge badge-pending'},'New')
+        ),
+        h('div',{className:'meta-row',style:{marginTop:4}},h('i',{className:'ti ti-parking'}),`${s.spaces?.side} spot`),
+        h('div',{className:'meta-row'},h('i',{className:'ti ti-calendar'}),`${fmt(s.from_date)} – ${fmt(s.to_date)}`),
+        h('div',{style:{display:'flex',gap:8,marginTop:10}},
+          h('button',{className:'btn btn-sm btn-danger',onClick:()=>decline(s)},h('i',{className:'ti ti-x'}),'Decline'),
+          h('button',{className:'btn btn-sm btn-primary',onClick:()=>approve(s)},h('i',{className:'ti ti-check'}),'Approve'),
+          h('button',{
+            className:'btn btn-sm',
+            style:{position:'relative'},
+            onClick:()=>onOpenChat(s)
+          },
+            h('i',{className:'ti ti-messages'}),
+            'Chat',
+            unreadSessions && unreadSessions.has(s.id) && h('span',{style:{
+              position:'absolute',top:-4,right:-4,width:8,height:8,
+              borderRadius:'50%',background:'#e24b4a',border:'2px solid #fff'
+            }})
+          )
+        )
+      ))
+    ),
+
+    activeSessions.length>0 && h('div',null,
+      h('div',{className:'section-label'},'Currently in use'),
+      activeSessions.map(s => {
+        const renterReleased = s.status==='released_by_renter';
+        return h('div',{key:s.id,className:'card',style:{borderColor:renterReleased?'#f5c542':'rgba(0,0,0,0.08)'}},
+          renterReleased && h('div',{className:'banner banner-amber',style:{marginBottom:10}},
+            h('i',{className:'ti ti-alert-triangle'}),
+            h('p',null,`${s.renter?.owner_name} has released the space. Please verify the car has been removed, then confirm below.`)
+          ),
+          h('div',{className:'card-header'},
+            h('div',{style:{display:'flex',gap:10,alignItems:'center'}},
+              h(Avatar,{name:s.renter?.owner_name}),
+              h('div',null,
+                h('div',{className:'card-title'},s.renter?.owner_name),
+                h('div',{className:'card-sub'},s.renter?.address)
+              )
+            ),
+            h('span',{className:renterReleased?'badge badge-inuse':'badge badge-inuse'},
+              renterReleased?'Pending confirmation':'In use'
+            )
+          ),
+          h('div',{className:'meta-row',style:{marginTop:4}},h('i',{className:'ti ti-parking'}),`${s.spaces?.side} spot`),
+          h('div',{className:'meta-row'},h('i',{className:'ti ti-calendar'}),`${fmt(s.from_date)} – ${fmt(s.to_date)}`),
+          h('div',{style:{display:'flex',gap:8,marginTop:10}},
+            h('button',{
+              className:'btn btn-sm',
+              style:{position:'relative'},
+              onClick:()=>onOpenChat(s)
+            },
+              h('i',{className:'ti ti-messages'}),
+              'Messages',
+              unreadSessions && unreadSessions.has(s.id) && h('span',{style:{
+                position:'absolute',top:-4,right:-4,width:8,height:8,
+                borderRadius:'50%',background:'#e24b4a',border:'2px solid #fff'
+              }})
+            ),
+            h('button',{
+              className:'btn btn-sm btn-primary',
+              onClick:()=>confirmVacated(s)
+            },h('i',{className:'ti ti-check'}),renterReleased?'Confirm vacated':'Force release')
+          )
+        );
+      })
+    ),
+
+    h('div',{className:'section-label'},'My parking spaces'),
+    spaces.map(sp => h('div',{key:sp.id,className:'card'},
+      h('div',{className:'toggle-row'},
+        h('div',null,
+          h('div',{className:'card-title'},`${sp.side} space`),
+          h('div',{className:'card-sub'},
+            sp.state==='available'?`${fmt(sp.from_date)} – ${fmt(sp.to_date)}`:
+            sp.state==='inuse'?'Currently in use':'Not shared'
+          )
+        ),
+        h('button',{
+          className:`toggle ${sp.state==='available'?'on':'off'}`,
+          disabled:sp.state==='inuse',
+          onClick:()=>toggleSpace(sp)
+        })
+      ),
+      sp.state==='available' && h('div',{style:{display:'flex',gap:8,marginTop:4,alignItems:'center'}},
+        h('button',{className:'btn btn-sm',onClick:()=>{setEditing(sp.id);setEditFrom(sp.from_date||'');setEditTo(sp.to_date||'')}},
+          h('i',{className:'ti ti-calendar'}),'Edit dates'
+        ),
+        h('span',{className:'badge badge-available'},h('i',{className:'ti ti-check',style:{fontSize:10}}),'Shared')
+      ),
+      editing===sp.id && h('div',{style:{marginTop:12,background:'#f7f7f5',borderRadius:10,padding:12}},
+        h('div',{className:'row2'},
+          h('div',{className:'input-group',style:{marginBottom:6}},
+            h('label',null,'From'),
+            h('input',{type:'date',value:editFrom,min:todayStr(),onChange:e=>setEditFrom(e.target.value)})
+          ),
+          h('div',{className:'input-group',style:{marginBottom:6}},
+            h('label',null,'To'),
+            h('input',{type:'date',value:editTo,min:editFrom||todayStr(),onChange:e=>setEditTo(e.target.value)})
+          )
+        ),
+        h('p',{style:{fontSize:11,color:'#aaa',marginBottom:8}},
+          'Available from 6AM on start date · until 6PM on end date'
+        ),
+        h('div',{style:{display:'flex',gap:8}},
+          h('button',{className:'btn btn-sm',onClick:()=>setEditing(null)},'Cancel'),
+          h('button',{className:'btn btn-sm btn-primary',disabled:!editFrom||!editTo,onClick:()=>saveAvailability(sp.id)},
+            h('i',{className:'ti ti-check'}),'Save'
+          )
+        )
+      )
+    ))
+  );
+}
+
+// ─────────────────────────────────────────────
+//  Chat modal
+// ─────────────────────────────────────────────
+function ChatModal({ session, myHome, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [msg, setMsg] = useState('');
+  const [loading, setLoading] = useState(true);
+  const bottomRef = useRef();
+
+  const isProvider = session.provider_home_id === myHome.id;
+  const otherHome = isProvider ? (session.renter||session.renter_home_id) : (session.provider||session.provider_home_id);
+  const otherName = typeof otherHome === 'object' ? otherHome.owner_name : '...';
+
+  const loadMessages = useCallback(async () => {
+    try {
+      // Fetch messages without join
+      const { data: msgs, error } = await db
+        .from('messages')
+        .select('*')
+        .eq('session_id', session.id)
+        .order('created_at');
+      if (error) { console.error('Messages load error:', error); setLoading(false); return; }
+      setMessages(msgs||[]);
+    } catch(err) {
+      console.error('Chat load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  },[session.id]);
+
+  useEffect(()=>{ loadMessages(); },[loadMessages]);
+
+  useEffect(()=>{
+    if (bottomRef.current) bottomRef.current.scrollIntoView({behavior:'smooth'});
+  },[messages]);
+
+  useEffect(()=>{
+    const channel = db.channel(`chat-${session.id}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`session_id=eq.${session.id}`},
+        ()=>loadMessages()
+      ).subscribe();
+    return ()=>db.removeChannel(channel);
+  },[session.id, loadMessages]);
+
+  const send = async () => {
+    if (!msg.trim()) return;
+    const text = msg.trim(); setMsg('');
+    await db.from('messages').insert({
+      session_id: session.id,
+      sender_home_id: myHome.id,
+      body: text,
+    });
+  };
+
+  const spaceInfo = session.spaces ? `${session.spaces.side} spot` : '';
+  const dateInfo = session.from_date ? `${fmt(session.from_date)} – ${fmt(session.to_date)}` : '';
+
+  return h('div',{className:'modal-overlay',onClick:e=>{if(e.target===e.currentTarget)onClose()}},
+    h('div',{className:'modal',style:{padding:0,display:'flex',flexDirection:'column',height:'72vh',borderRadius:'22px 22px 0 0'}},
+      h('div',{style:{padding:'14px 16px',borderBottom:'0.5px solid rgba(0,0,0,0.08)',display:'flex',gap:10,alignItems:'center'}},
+        h(Avatar,{name:otherName}),
+        h('div',{style:{flex:1}},
+          h('div',{style:{fontWeight:600,fontSize:15}},otherName),
+          h('div',{style:{fontSize:11,color:'#aaa'}},`${spaceInfo} · ${dateInfo}`)
+        ),
+        h('button',{className:'btn btn-sm',onClick:onClose},h('i',{className:'ti ti-x'}))
+      ),
+      h('div',{style:{flex:1,overflowY:'auto',padding:'12px 14px',display:'flex',flexDirection:'column'}},
+        loading ? h('div',{style:{textAlign:'center',padding:24}},h('div',{className:'spinner spinner-dark',style:{margin:'0 auto'}})) :
+        messages.length===0 ? h('div',{className:'empty-state',style:{padding:'32px 0'}},
+          h('i',{className:'ti ti-message'}),h('p',null,'No messages yet')
+        ) :
+        messages.map((m,i) => {
+          const mine = m.sender_home_id === myHome.id;
+          return h('div',{key:m.id,style:{display:'flex',flexDirection:'column',alignItems:mine?'flex-end':'flex-start'}},
+            h('div',{className:`msg-bubble ${mine?'msg-out':'msg-in'}`}, m.body),
+            h('div',{style:{fontSize:10,color:'#ccc',margin:'2px 6px 6px'}},
+              new Date(m.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+            )
+          );
+        }),
+        h('div',{ref:bottomRef})
+      ),
+      h('div',{style:{display:'flex',gap:8,padding:'10px 14px',borderTop:'0.5px solid rgba(0,0,0,0.08)',background:'#fff'}},
+        h('input',{
+          style:{flex:1,padding:'9px 14px',borderRadius:20,border:'0.5px solid rgba(0,0,0,0.15)',background:'#f5f5f2',fontSize:13,outline:'none'},
+          placeholder:'Type a message...',value:msg,
+          onChange:e=>setMsg(e.target.value),
+          onKeyDown:e=>e.key==='Enter'&&send()
+        }),
+        h('button',{className:'btn btn-primary btn-sm',style:{borderRadius:20,width:38,height:38,padding:0,display:'flex',alignItems:'center',justifyContent:'center'},onClick:send},
+          h('i',{className:'ti ti-send'})
+        )
+      )
+    )
+  );
+}
+
+// ─────────────────────────────────────────────
+//  Main App
+// ─────────────────────────────────────────────
+function App() {
+  const [authState, setAuthState] = useState('loading'); // loading | loggedout | needsprofile | ready
+  const [authScreen, setAuthScreen] = useState('login'); // login | signup
+  const [user, setUser] = useState(null);
+  const [myHome, setMyHome] = useState(null);
+  const [tab, setTab] = useState('find');
+  const markAllSeen = (homeId) => {
+    const seenKey = 'parkmontage-seen-' + homeId;
+    const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+    // Mark all sessions as seen up to now
+    const now = new Date().toISOString();
+    const updated = { ...seen, _lastTabVisit: now };
+    localStorage.setItem(seenKey, JSON.stringify(updated));
+    setUnreadCount(0);
+    setUnreadSessions(new Set());
+  };
+  const [chatSession, setChatSession] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadSessions, setUnreadSessions] = useState(new Set());
+
+  // Safety net — if loading takes more than 6 seconds, show login screen
+  useEffect(()=>{
+    if (authState !== 'loading') return;
+    const timer = setTimeout(()=>{
+      console.warn('Loading timeout — clearing session and showing login');
+      try { localStorage.removeItem('parkmontage-auth'); } catch(e) {}
+      setAuthState('loggedout');
+    }, 6000);
+    return ()=>clearTimeout(timer);
+  },[authState]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(()=>setToast(null), 3200);
+  };
+
+  const loadHome = async (email) => {
+    try {
+      const data = await dbFetch('homes?owner_email=eq.' + encodeURIComponent(email) + '&limit=1');
+      return Array.isArray(data) ? data[0] || null : null;
+    } catch(e) { return null; }
+  };
+
+  useEffect(()=>{
+    // Handle session with timeout fallback for Safari
+    const initSession = async () => {
+      try {
+        // Read user directly from localStorage — no Supabase client calls
+        const storedUser = getStoredUser();
+        if (storedUser?.email) {
+          setUser(storedUser);
+          const home = await loadHome(storedUser.email);
+          if (!home) { setAuthState('needsprofile'); return; }
+          setMyHome(home);
+          setAuthState('ready');
+          return;
+        }
+        // Check URL hash for fresh magic link token
+        const hash = window.location.hash;
+        if (hash && hash.includes('access_token')) {
+          const params = new URLSearchParams(hash.replace('#', ''));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          if (accessToken) {
+            // Decode user from JWT
+            try {
+              const payload = JSON.parse(atob(accessToken.split('.')[1]));
+              const userEmail = payload.email;
+              if (userEmail) {
+                // Store session manually
+                const sessionData = {
+                  access_token: accessToken,
+                  refresh_token: refreshToken,
+                  expires_at: payload.exp,
+                  user: { id: payload.sub, email: userEmail, ...payload }
+                };
+                localStorage.setItem('parkmontage-auth', JSON.stringify(sessionData));
+                setUser(sessionData.user);
+                // Clear hash from URL
+                window.history.replaceState(null, '', window.location.pathname);
+                const home = await loadHome(userEmail);
+                if (!home) { setAuthState('needsprofile'); return; }
+                setMyHome(home);
+                setAuthState('ready');
+                return;
+              }
+            } catch(e) { console.warn('JWT decode error:', e); }
+          }
+        }
+        // No session found
+        setAuthState('loggedout');
+      } catch(err) {
+        console.error('Session init error:', err);
+        setAuthState('loggedout');
+      }
+    };
+
+    // Patch db client to use stored token directly
+    // This avoids calling setSession which can hang
+    const patchDbAuth = () => {
+      const token = getToken();
+      if (token && db.rest) {
+        try {
+          db.rest.headers['Authorization'] = 'Bearer ' + token;
+        } catch(e) {}
+      }
+      if (token && db.realtime) {
+        try {
+          db.realtime.accessToken = token;
+        } catch(e) {}
+      }
+    };
+    patchDbAuth();
+
+    // Auto-refresh token before it expires
+    const refreshToken = async () => {
+      try {
+        const stored = localStorage.getItem('parkmontage-auth');
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        if (!parsed?.refresh_token) return;
+
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAt = parsed.expires_at || 0;
+        
+        // Refresh if token expires within 5 minutes
+        if (expiresAt - now > 300) return;
+
+        console.log('Refreshing auth token...');
+        const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refresh_token: parsed.refresh_token })
+        });
+
+        if (!res.ok) {
+          console.warn('Token refresh failed:', res.status);
+          return;
+        }
+
+        const data = await res.json();
+        if (data?.access_token) {
+          // Update stored session with new tokens
+          const updated = {
+            ...parsed,
+            access_token: data.access_token,
+            refresh_token: data.refresh_token || parsed.refresh_token,
+            expires_at: data.expires_at || (now + (data.expires_in || 3600)),
+          };
+          localStorage.setItem('parkmontage-auth', JSON.stringify(updated));
+          patchDbAuth();
+          console.log('Token refreshed successfully');
+        }
+      } catch(err) {
+        console.warn('Token refresh error:', err);
+      }
+    };
+
+    // Check token every minute and refresh if needed
+    refreshToken();
+    const refreshInterval = setInterval(refreshToken, 60000);
+
+    initSession();
+
+    // onAuthStateChange handles sign out and token refresh events
+    let subscription = null;
+    try {
+      const { data } = db.auth.onAuthStateChange(async (event, session) => {
+        if (event==='SIGNED_OUT') { 
+          setUser(null); setMyHome(null); setAuthState('loggedout'); return; 
+        }
+        if (event==='TOKEN_REFRESHED' && session?.user) {
+          setUser(session.user);
+        }
+      });
+      subscription = data?.subscription;
+    } catch(err) {
+      console.warn('onAuthStateChange error:', err);
+    }
+    return ()=>{ 
+      try { subscription?.unsubscribe(); } catch(e) {}
+      clearInterval(refreshInterval);
+    };
+  },[]);
+
+  // Poll pending request count for My Spaces badge
+  useEffect(()=>{
+    if (!myHome) return;
+    const poll = async () => {
+      // Count pending requests for My Spaces badge
+      const pendData = await dbFetch(
+        'sessions?provider_home_id=eq.' + myHome.id + '&status=eq.pending&select=id'
+      );
+      setPendingCount(Array.isArray(pendData) ? pendData.length : 0);
+
+      // Count unread messages — messages sent after last seen timestamp
+      // We store last-seen timestamps in localStorage keyed by session id
+      const seenKey = 'parkmontage-seen-' + myHome.id;
+      const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+
+      // Get all sessions involving this homeowner
+      const [mySessions, provSessions] = await Promise.all([
+        dbFetch('sessions?renter_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
+        dbFetch('sessions?provider_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
+      ]);
+      const allSessionIds = [
+        ...(Array.isArray(mySessions)?mySessions:[]),
+        ...(Array.isArray(provSessions)?provSessions:[])
+      ].map(s=>s.id);
+
+      if (allSessionIds.length === 0) { setUnreadCount(0); return; }
+
+      // Fetch all messages from others in my sessions, newer than last seen
+      const unreadSet = new Set();
+      let totalUnread = 0;
+      for (const sessionId of allSessionIds) {
+        const lastSeen = seen[sessionId] || '1970-01-01T00:00:00Z';
+        const msgs = await dbFetch(
+          'messages?session_id=eq.' + sessionId +
+          '&sender_home_id=neq.' + myHome.id +
+          '&created_at=gt.' + encodeURIComponent(lastSeen) +
+          '&select=id'
+        );
+        if (Array.isArray(msgs) && msgs.length > 0) {
+          totalUnread += msgs.length;
+          unreadSet.add(sessionId);
+        }
+      }
+      setUnreadCount(totalUnread);
+      setUnreadSessions(unreadSet);
+    };
+    poll();
+    const interval = setInterval(poll, 10000);
+    return ()=>clearInterval(interval);
+  },[myHome]);
+
+  if (authState==='loading') return h('div',{className:'loading-screen'},
+    h('div',{className:'spinner spinner-dark'}),
+    h('p',null,'Loading...')
+  );
+
+  if (authState==='loggedout') return authScreen==='login'
+    ? h(LoginScreen,{onSwitch:()=>setAuthScreen('signup')})
+    : h(SignupScreen,{onSwitch:()=>setAuthScreen('login'),userEmail:'',onComplete:()=>{}});
+
+  if (authState==='needsprofile') return h(SignupScreen,{
+    onSwitch:async()=>{ try{await db.auth.signOut({scope:'local'});}catch(e){} try{localStorage.clear();}catch(e){} window.location.reload(true); },
+    userEmail: user?.email||'',
+    onComplete: (home) => { setMyHome(home); setAuthState('ready'); }
+  });
+
+  const headers = {
+    find:     { title:'Find a space',   sub:'Search available parking near you' },
+    sessions: { title:'My sessions',    sub:'Spaces you\'re currently using' },
+    spaces:   { title:'My spaces',      sub:'Manage your parking availability' },
+    account:  { title:'My account',     sub:'Your profile and sign out' },
+  };
+
+  return h('div',{className:'phone'},
+    h('div',{className:'statusbar'},
+      h('span',null, new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false})),
+      h('div',{style:{display:'flex',alignItems:'center',gap:8}},
+        h('span',{style:{fontSize:11,color:'#aaa'}},myHome?.address),
+
+      )
+    ),
+    h('div',{className:'header'},
+      h('h1',null,headers[tab].title),
+      h('p',null,headers[tab].sub)
+    ),
+    h('div',{className:'content'},
+      tab==='find'     && h(FindSpaceTab,    {myHome,showToast}),
+      tab==='sessions' && h(MySessionsTab,   {myHome,showToast,unreadSessions,onOpenChat:(sess)=>{
+        // Mark messages as seen
+        const seenKey = 'parkmontage-seen-' + myHome.id;
+        const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+        seen[sess.id] = new Date().toISOString();
+        localStorage.setItem(seenKey, JSON.stringify(seen));
+        setUnreadSessions(prev=>{ const n=new Set(prev); n.delete(sess.id); return n; });
+        setChatSession(sess);
+      }}),
+      tab==='spaces'   && h(MySpacesTab,     {myHome,showToast,unreadSessions,onOpenChat:(sess)=>{
+        // Mark messages as seen
+        const seenKey = 'parkmontage-seen-' + myHome.id;
+        const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+        seen[sess.id] = new Date().toISOString();
+        localStorage.setItem(seenKey, JSON.stringify(seen));
+        setUnreadSessions(prev=>{ const n=new Set(prev); n.delete(sess.id); return n; });
+        setChatSession(sess);
+      }}),
+      tab==='account'  && h('div',null,
+        h('div',{className:'card',style:{marginBottom:10}},
+          h('div',{style:{display:'flex',gap:12,alignItems:'center',marginBottom:12}},
+            h(Avatar,{name:myHome?.owner_name,size:48}),
+            h('div',null,
+              h('div',{className:'card-title'},myHome?.owner_name),
+              h('div',{className:'card-sub'},myHome?.address),
+              h('div',{className:'card-sub'},user?.email)
+            )
+          )
+        ),
+        h('div',{className:'card'},
+          h('button',{
+            className:'btn btn-danger btn-block',
+            onClick:async()=>{
+              try { await db.auth.signOut({ scope: 'local' }); } catch(e) {}
+              // Clear all storage
+              try { localStorage.clear(); } catch(e) {}
+              try { sessionStorage.clear(); } catch(e) {}
+              // Force navigate to root — works reliably on Safari
+              window.location.replace(window.location.origin + window.location.pathname + '?signout=' + Date.now());
+            }
+          },h('i',{className:'ti ti-logout'}),'Sign out')
+        )
+      ),
+    ),
+    chatSession && h(ChatModal,{session:chatSession,myHome,onClose:()=>setChatSession(null)}),
+    h(Toast,{msg:toast}),
+    h('div',{className:'tabbar'},
+      [
+        {id:'find',     icon:'ti-search',  label:'Find space'},
+        {id:'sessions', icon:'ti-car',     label:'My sessions', badge:unreadCount},
+        {id:'spaces',   icon:'ti-parking', label:'My spaces', badge:pendingCount},
+        {id:'account',  icon:'ti-user',    label:'Account'},
+      ].map(t => h('button',{key:t.id,className:`tab${tab===t.id?' active':''}`,onClick:()=>{
+        setTab(t.id);
+        if (t.id==='sessions' && myHome) markAllSeen(myHome.id);
+      }},
+        h('i',{className:`ti ${t.icon}`}),
+        t.badge>0 && h('div',{className:'tab-badge'},t.badge),
+        h('span',null,t.label)
+      ))
+    )
+  );
+}
+
+ReactDOM.render(h(App), document.getElementById('root'));
+</script>
+</body>
+</html>
