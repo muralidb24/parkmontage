@@ -1,0 +1,19 @@
+name: Daily Parking Reminders
+
+on:
+  schedule:
+    # Runs at 1PM UTC (8AM EST / 9AM EDT)
+    - cron: '0 13 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder emails
+        run: |
+          curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SERVICE_ROLE_KEY }}" \
+            -d '{}' \
+            "https://uioehziiyopvhudqvenc.supabase.co/functions/v1/send-reminders"
