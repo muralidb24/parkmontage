@@ -1146,6 +1146,100 @@ function ChatModal({ session, myHome, onClose }) {
 }
 
 // ─────────────────────────────────────────────
+//  Account tab
+// ─────────────────────────────────────────────
+function AccountTab({ myHome, user, showToast }) {
+  const [type, setType] = useState('feedback');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const submit = async () => {
+    if (!message.trim()) return;
+    setSubmitting(true);
+    await sendEmail({
+      to: 'muralidb24@gmail.com',
+      subject: '[ParkMontage] ' + (type === 'feedback' ? 'Feedback' : type === 'problem' ? 'Problem Report' : 'Question') + ' from ' + myHome.owner_name,
+      html: '<p><strong>From:</strong> ' + myHome.owner_name + ' (' + myHome.address + ')</p>' +
+            '<p><strong>Email:</strong> ' + user.email + '</p>' +
+            '<p><strong>Type:</strong> ' + type + '</p>' +
+            '<p><strong>Message:</strong></p>' +
+            '<p>' + message.replace(/
+/g, '<br>') + '</p>'
+    });
+    setSubmitting(false);
+    setSubmitted(true);
+    setMessage('');
+    setTimeout(() => setSubmitted(false), 4000);
+    showToast('Message sent! We will get back to you soon.');
+  };
+
+  return h('div',null,
+    // Profile card
+    h('div',{className:'card',style:{marginBottom:10}},
+      h('div',{style:{display:'flex',gap:12,alignItems:'center'}},
+        h(Avatar,{name:myHome?.owner_name,size:48}),
+        h('div',null,
+          h('div',{className:'card-title'},myHome?.owner_name),
+          h('div',{className:'card-sub'},myHome?.address),
+          h('div',{className:'card-sub'},user?.email)
+        )
+      )
+    ),
+
+    // Feedback form
+    h('div',{className:'card',style:{marginBottom:10}},
+      h('div',{className:'card-title',style:{marginBottom:12}},'Send us a message'),
+      h('div',{className:'input-group'},
+        h('label',null,'Type'),
+        h('select',{value:type,onChange:e=>setType(e.target.value)},
+          h('option',{value:'feedback'},'💬 Feedback'),
+          h('option',{value:'problem'},'⚠️ Problem report'),
+          h('option',{value:'question'},'❓ Question')
+        )
+      ),
+      h('div',{className:'input-group'},
+        h('label',null,'Message'),
+        h('textarea',{
+          rows:5,
+          placeholder:type==='feedback'?'Share your thoughts on the app...':
+                      type==='problem'?'Describe the problem you encountered...':
+                      'What would you like to know?',
+          value:message,
+          onChange:e=>setMessage(e.target.value)
+        })
+      ),
+      submitted
+        ? h('div',{className:'banner banner-green'},
+            h('i',{className:'ti ti-check'}),
+            h('p',null,'Message sent! We'll get back to you soon.')
+          )
+        : h('button',{
+            className:'btn btn-primary btn-block',
+            onClick:submit,
+            disabled:submitting||!message.trim()
+          },
+            submitting ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-send'}),
+            submitting ? 'Sending...' : 'Send message'
+          )
+    ),
+
+    // Sign out
+    h('div',{className:'card'},
+      h('button',{
+        className:'btn btn-danger btn-block',
+        onClick:async()=>{
+          try { await db.auth.signOut({ scope: 'local' }); } catch(e) {}
+          try { localStorage.clear(); } catch(e) {}
+          try { sessionStorage.clear(); } catch(e) {}
+          window.location.replace(window.location.origin + window.location.pathname + '?signout=' + Date.now());
+        }
+      },h('i',{className:'ti ti-logout'}),'Sign out')
+    )
+  );
+}
+
+// ─────────────────────────────────────────────
 //  Main App
 // ─────────────────────────────────────────────
 function App() {
@@ -1443,31 +1537,7 @@ function App() {
         setUnreadSessions(prev=>{ const n=new Set(prev); n.delete(sess.id); return n; });
         setChatSession(sess);
       }}),
-      tab==='account'  && h('div',null,
-        h('div',{className:'card',style:{marginBottom:10}},
-          h('div',{style:{display:'flex',gap:12,alignItems:'center',marginBottom:12}},
-            h(Avatar,{name:myHome?.owner_name,size:48}),
-            h('div',null,
-              h('div',{className:'card-title'},myHome?.owner_name),
-              h('div',{className:'card-sub'},myHome?.address),
-              h('div',{className:'card-sub'},user?.email)
-            )
-          )
-        ),
-        h('div',{className:'card'},
-          h('button',{
-            className:'btn btn-danger btn-block',
-            onClick:async()=>{
-              try { await db.auth.signOut({ scope: 'local' }); } catch(e) {}
-              // Clear all storage
-              try { localStorage.clear(); } catch(e) {}
-              try { sessionStorage.clear(); } catch(e) {}
-              // Force navigate to root — works reliably on Safari
-              window.location.replace(window.location.origin + window.location.pathname + '?signout=' + Date.now());
-            }
-          },h('i',{className:'ti ti-logout'}),'Sign out')
-        )
-      ),
+      tab==='account'  && h(AccountTab, {myHome, user, showToast}),
     ),
     chatSession && h(ChatModal,{session:chatSession,myHome,onClose:()=>setChatSession(null)}),
     h(Toast,{msg:toast}),
