@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Community Parking</title>
+<title>ParkMontage</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -152,10 +152,10 @@ textarea{font-family:inherit}
 // ─────────────────────────────────────────────
 //  CONFIGURATION — replace with your values
 // ─────────────────────────────────────────────
-console.log('Community Parking app version: 2.5 — email enabled');
+console.log('ParkMontage app version: 2.5 — email enabled');
 const SUPABASE_URL = 'https://uioehziiyopvhudqvenc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpb2VoemlpeW9wdmh1ZHF2ZW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTQ0MzYsImV4cCI6MjA5NDgzMDQzNn0.Sj9gRR7b7pJFEfP4kTXdBGDyFSCxTijz5Oq4LA_4AYo';
-const COMMUNITY_CODE = 'MAPLE2025'; // Change this to your community's code
+const COMMUNITY_CODE = 'MDG2026'; // Change this to your community's code
 console.log('APP VERSION: 7 — email notifications enabled');
 
 // ─────────────────────────────────────────────
@@ -287,8 +287,7 @@ function LoginScreen({ onSwitch }) {
     setLoading(true); setError('');
     const { error: err } = await db.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: 'https://muralidb24.github.io/parkmontage' }
-      
+      options: { emailRedirectTo: 'https://muralidb24.github.io/parkmontage/' }
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -303,8 +302,8 @@ function LoginScreen({ onSwitch }) {
   );
 
   return h('div',{className:'auth-screen'},
-    h('div',{className:'auth-logo'},'🅿️'),
-    h('h1',{className:'auth-title'},'Community\nParking'),
+    h('div',{className:'auth-logo'},'🚗'),
+    h('h1',{className:'auth-title'},'ParkMontage'),
     h('p',{className:'auth-sub'},'Sign in with your email. We\'ll send you a magic link — no password needed.'),
     h('div',{className:'input-group'},
       h('label',null,'Email address'),
@@ -687,9 +686,9 @@ function MySessionsTab({ myHome, showToast, onOpenChat, unreadSessions }) {
         html: `<p>Hi ${provider.owner_name},</p>
           <p><strong>${myHome.owner_name}</strong> has removed their car from your 
           <strong>${sess.spaces?.side} parking space</strong>.</p>
-          <p>Please verify the space is clear, then open the Community Parking app 
+          <p>Please verify the space is clear, then open the ParkMontage app 
           and confirm the space has been vacated.</p>
-          <p>— Community Parking</p>`
+          <p>— ParkMontage</p>`
       });
     }
     showToast('Release notified — waiting for owner to confirm.');
@@ -891,7 +890,7 @@ function MySpacesTab({ myHome, showToast, onOpenChat, unreadSessions }) {
           at ${myHome.address}</strong> has been approved.</p>
           <p><strong>Dates:</strong> ${fmt(sess.from_date)} – ${fmt(sess.to_date)}<br>
           <strong>Available:</strong> From 6AM on ${fmt(sess.from_date)} until 6PM on ${fmt(sess.to_date)}</p>
-          <p>Please open the Community Parking app to view your session details.</p>
+          <p>Please open the ParkMontage app to view your session details.</p>
           <p>— ${myHome.owner_name}</p>`
       });
     }
