@@ -1170,11 +1170,10 @@ function AccountTab({ myHome, user, showToast }) {
     setSubmitted(true);
     setMessage('');
     setTimeout(() => setSubmitted(false), 4000);
-    showToast('Message sent! We will get back to you soon.');
+    showToast('Message sent!');
   };
 
   return h('div',null,
-    // Profile card
     h('div',{className:'card',style:{marginBottom:10}},
       h('div',{style:{display:'flex',gap:12,alignItems:'center'}},
         h(Avatar,{name:myHome?.owner_name,size:48}),
@@ -1185,25 +1184,23 @@ function AccountTab({ myHome, user, showToast }) {
         )
       )
     ),
-
-    // Feedback form
     h('div',{className:'card',style:{marginBottom:10}},
       h('div',{className:'card-title',style:{marginBottom:12}},'Send us a message'),
       h('div',{className:'input-group'},
         h('label',null,'Type'),
         h('select',{value:type,onChange:e=>setType(e.target.value)},
-          h('option',{value:'feedback'},'💬 Feedback'),
-          h('option',{value:'problem'},'⚠️ Problem report'),
-          h('option',{value:'question'},'❓ Question')
+          h('option',{value:'feedback'},'Feedback'),
+          h('option',{value:'problem'},'Problem report'),
+          h('option',{value:'question'},'Question')
         )
       ),
       h('div',{className:'input-group'},
         h('label',null,'Message'),
         h('textarea',{
           rows:5,
-          placeholder:type==='feedback'?'Share your thoughts on the app...':
-                      type==='problem'?'Describe the problem you encountered...':
-                      'What would you like to know?',
+          placeholder:type==='problem'?'Describe the problem you encountered...':
+                      type==='question'?'What would you like to know?':
+                      'Share your thoughts on the app...',
           value:message,
           onChange:e=>setMessage(e.target.value)
         })
@@ -1211,7 +1208,7 @@ function AccountTab({ myHome, user, showToast }) {
       submitted
         ? h('div',{className:'banner banner-green'},
             h('i',{className:'ti ti-check'}),
-            h('p',null,"Message sent! We'll get back to you soon.")
+            h('p',null,'Message sent! We will get back to you soon.')
           )
         : h('button',{
             className:'btn btn-primary btn-block',
@@ -1222,8 +1219,6 @@ function AccountTab({ myHome, user, showToast }) {
             submitting ? 'Sending...' : 'Send message'
           )
     ),
-
-    // Sign out
     h('div',{className:'card'},
       h('button',{
         className:'btn btn-danger btn-block',
