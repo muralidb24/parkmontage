@@ -1164,8 +1164,7 @@ function AccountTab({ myHome, user, showToast }) {
             '<p><strong>Email:</strong> ' + user.email + '</p>' +
             '<p><strong>Type:</strong> ' + type + '</p>' +
             '<p><strong>Message:</strong></p>' +
-            '<p>' + message.replace(/
-/g, '<br>') + '</p>'
+            '<p>' + message.split('\n').join('<br>') + '</p>'
     });
     setSubmitting(false);
     setSubmitted(true);
