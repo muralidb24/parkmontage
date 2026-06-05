@@ -2,9 +2,8 @@ name: Daily Parking Reminders
 
 on:
   schedule:
-    # Runs at 1PM UTC (8AM EST / 9AM EDT)
-    - cron: '0 13 * * *'
-  workflow_dispatch: # Allows manual trigger
+    - cron: '0 14 * * *'
+  workflow_dispatch:
 
 jobs:
   send-reminders:
@@ -12,8 +11,14 @@ jobs:
     steps:
       - name: Trigger reminder emails
         run: |
-          curl -s -X POST \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.SERVICE_ROLE_KEY }}" \
             -d '{}' \
-            "https://uioehziiyopvhudqvenc.supabase.co/functions/v1/send-reminders"
+            "https://uioehziiyopvhudqvenc.supabase.co/functions/v1/send-reminders")
+          echo "Response: $RESPONSE"
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error: HTTP $HTTP_CODE"
+            exit 1
+          fi
