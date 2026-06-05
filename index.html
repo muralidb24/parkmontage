@@ -153,9 +153,9 @@ textarea{font-family:inherit}
 //  CONFIGURATION — replace with your values
 // ─────────────────────────────────────────────
 console.log('ParkMontage app version: 2.5 — email enabled');
-const SUPABASE_URL = 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJ...your-anon-key...';
-const COMMUNITY_CODE = 'MAPLE2025'; // Change this to your community's code
+const SUPABASE_URL = 'https://uioehziiyopvhudqvenc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpb2VoemlpeW9wdmh1ZHF2ZW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTQ0MzYsImV4cCI6MjA5NDgzMDQzNn0.Sj9gRR7b7pJFEfP4kTXdBGDyFSCxTijz5Oq4LA_4AYo';
+const COMMUNITY_CODE = 'MDG2026'; // Change this to your community's code
 console.log('APP VERSION: 7 — email notifications enabled');
 
 // ─────────────────────────────────────────────
@@ -287,7 +287,7 @@ function LoginScreen({ onSwitch }) {
     setLoading(true); setError('');
     const { error: err } = await db.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: 'http://127.0.0.1:5500/community-parking.html' }
+      options: { emailRedirectTo: 'https://muralidb24.github.io/parkmontage' }
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
