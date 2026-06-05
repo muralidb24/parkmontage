@@ -284,6 +284,12 @@ function LoginScreen({ onSwitch }) {
 
   const send = async () => {
     if (!email.trim()) return;
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     setLoading(true); setError('');
     const { error: err } = await db.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
@@ -341,14 +347,45 @@ function SignupScreen({ onSwitch, userEmail, onComplete }) {
       setError('Invalid community code. Please check with your community admin.'); return;
     }
     setLoading(true); setError('');
-    const address = `${number.trim()} ${street.trim()}`;
-    const { data, error: err } = await db.from('homes').insert({
-      address,
-      owner_name: name.trim(),
-      owner_email: userEmail,
-    }).select().single();
+    const address = name.trim() ? number.trim() + ' ' + street.trim() : '';
+
+    // Retry up to 3 times with increasing delays
+    // This handles timing issues where the auth session isn't fully ready yet
+    let data = null;
+    let err = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      if (attempt > 1) {
+        // Wait before retrying — gives auth session time to establish
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+      }
+      const result = await dbFetch('homes', {
+        method: 'POST',
+        prefer: 'return=representation',
+        body: {
+          address,
+          owner_name: name.trim(),
+          owner_email: userEmail,
+        }
+      });
+      if (Array.isArray(result) && result.length > 0) {
+        data = result[0];
+        err = null;
+        break;
+      } else if (result?.code || result?.message) {
+        err = result;
+        console.warn('Signup attempt ' + attempt + ' failed:', result);
+      } else if (result && !result.code) {
+        data = result;
+        err = null;
+        break;
+      }
+    }
+
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err || !data) {
+      setError('Account creation failed. Please try again in a moment.');
+      return;
+    }
     onComplete(data);
   };
 
@@ -1215,7 +1252,7 @@ function AccountTab({ myHome, user, showToast }) {
       submitted
         ? h('div',{className:'banner banner-green'},
             h('i',{className:'ti ti-check'}),
-            h('p',null,"Message sent! We'll get back to you soon.")
+            h('p',null,'Message sent! We'll get back to you soon.')
           )
         : h('button',{
             className:'btn btn-primary btn-block',
