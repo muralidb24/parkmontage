@@ -2,13 +2,23 @@ name: Daily Parking Reminders
 
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 11 * * *'
   workflow_dispatch:
 
 jobs:
   send-reminders:
     runs-on: ubuntu-latest
     steps:
+      - name: Expire old available spaces
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SERVICE_ROLE_KEY }}" \
+            -d '{"state":"unavailable","from_date":null,"to_date":null}' \
+            "https://uioehziiyopvhudqvenc.supabase.co/rest/v1/spaces?state=eq.available&to_date=lt.$(date -u +%Y-%m-%d)")
+          echo "Expire spaces response: $RESPONSE"
+
       - name: Trigger reminder emails
         run: |
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
