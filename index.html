@@ -285,8 +285,8 @@ function LoginScreen({ onSwitch }) {
   const send = async () => {
     if (!email.trim()) return;
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    const emailValid = email.trim().includes("@") && email.trim().includes(".") && email.trim().split("@").length === 2;
+    if (!emailValid) {
       setError('Please enter a valid email address.');
       return;
     }
@@ -947,13 +947,65 @@ function MySpacesTab({ myHome, showToast, onOpenChat, unreadSessions }) {
 
   const confirmVacated = async (sess) => {
     await db.from('sessions').update({status:'released'}).eq('id',sess.id);
-    await db.from('spaces').update({state:'unavailable',from_date:null,to_date:null}).eq('id',sess.space_id);
-    await db.from('messages').insert({
-      session_id: sess.id,
-      sender_home_id: myHome.id,
-      body: 'Confirmed — space has been vacated. Thanks for using it and for being a great neighbor!',
-    });
-    showToast('Space marked as vacated and unavailable.'); load();
+
+    // Check if this was a cancellation (released before use started)
+    // or an actual use (released on or after from_date)
+    const today = new Date().toISOString().slice(0,10);
+    const usageStarted = today >= sess.from_date;
+
+    if (usageStarted) {
+      // Space was actually used — check if there are remaining days in the original period
+      const { data: space } = await db.from('spaces').select('*').eq('id',sess.space_id).single();
+      const originalToDate = space?.to_date || sess.to_date;
+
+      // Add one day after session end date to get the next available day
+      const sessionEndDate = new Date(sess.to_date + 'T12:00:00Z');
+      sessionEndDate.setDate(sessionEndDate.getDate() + 1);
+      const nextAvailableDate = sessionEndDate.toISOString().slice(0,10);
+
+      if (nextAvailableDate <= originalToDate) {
+        // Remaining days available — restore space for the remaining period
+        await db.from('spaces').update({
+          state:'available',
+          from_date: nextAvailableDate,
+          to_date: originalToDate
+        }).eq('id',sess.space_id);
+        await db.from('messages').insert({
+          session_id: sess.id,
+          sender_home_id: myHome.id,
+          body: 'Confirmed — space has been vacated. The space has been made available again for the remaining period (' + fmt(nextAvailableDate) + ' – ' + fmt(originalToDate) + ').',
+        });
+        showToast('Space vacated — restored as available for remaining period.');
+      } else {
+        // No remaining days — mark as unavailable
+        await db.from('spaces').update({
+          state:'unavailable', from_date:null, to_date:null
+        }).eq('id',sess.space_id);
+        await db.from('messages').insert({
+          session_id: sess.id,
+          sender_home_id: myHome.id,
+          body: 'Confirmed — space has been vacated. Thanks for using it and for being a great neighbor!',
+        });
+        showToast('Space marked as vacated and unavailable.');
+      }
+    } else {
+      // Cancelled before use started — restore space to available with original dates
+      // Fetch the space to get the original dates
+      const { data: space } = await db.from('spaces').select('*').eq('id',sess.space_id).single();
+      // Use session dates as fallback if space dates are gone
+      const fromDate = space?.from_date || sess.from_date;
+      const toDate = space?.to_date || sess.to_date;
+      await db.from('spaces').update({
+        state:'available', from_date:fromDate, to_date:toDate
+      }).eq('id',sess.space_id);
+      await db.from('messages').insert({
+        session_id: sess.id,
+        sender_home_id: myHome.id,
+        body: 'Cancellation confirmed — the parking space is now available again for the original dates.',
+      });
+      showToast('Cancellation confirmed — space restored to available.');
+    }
+    load();
   };
 
   if (loading) return h('div',{style:{textAlign:'center',padding:'48px 20px'}},h('div',{className:'spinner spinner-dark',style:{margin:'0 auto'}}));
