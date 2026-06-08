@@ -1363,7 +1363,7 @@ function App() {
       console.warn('Loading timeout — clearing session and showing login');
       try { localStorage.removeItem('parkmontage-auth'); } catch(e) {}
       setAuthState('loggedout');
-    }, 6000);
+    }, 15000);
     return ()=>clearTimeout(timer);
   },[authState]);
 
