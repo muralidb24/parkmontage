@@ -155,7 +155,7 @@ textarea{font-family:inherit}
 console.log('ParkMontage app version: 2.5 — email enabled');
 const SUPABASE_URL = 'https://uioehziiyopvhudqvenc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpb2VoemlpeW9wdmh1ZHF2ZW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTQ0MzYsImV4cCI6MjA5NDgzMDQzNn0.Sj9gRR7b7pJFEfP4kTXdBGDyFSCxTijz5Oq4LA_4AYo';
-const COMMUNITY_CODE = 'MDG2026'; // Change this to your community's code
+const COMMUNITY_CODE = ‘MDG2026'; // Change this to your community's code
 console.log('APP VERSION: 7 — email notifications enabled');
 
 // ─────────────────────────────────────────────
@@ -175,8 +175,8 @@ function getStoredUser() {
     const stored = localStorage.getItem('parkmontage-auth');
     if (!stored) return null;
     const parsed = JSON.parse(stored);
-    const now = Math.floor(Date.now() / 1000);
-    if (parsed?.expires_at && parsed.expires_at < now) return null;
+    // Return user even if token is expired — refresh logic will get a new token
+    // Only return null if there's no user data at all
     return parsed?.user || null;
   } catch(e) { return null; }
 }
@@ -1356,7 +1356,7 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadSessions, setUnreadSessions] = useState(new Set());
 
-  // Safety net — if loading takes more than 6 seconds, show login screen
+  // Safety net — if loading takes more than 15 seconds, show login screen
   useEffect(()=>{
     if (authState !== 'loading') return;
     const timer = setTimeout(()=>{
@@ -1383,6 +1383,46 @@ function App() {
     // Handle session with timeout fallback for Safari
     const initSession = async () => {
       try {
+        // Try to refresh token if expired before giving up
+        const stored = localStorage.getItem('parkmontage-auth');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const now = Math.floor(Date.now() / 1000);
+          const expiresAt = parsed?.expires_at || 0;
+          // If token is expired or expiring within 5 minutes, try to refresh
+          if (parsed?.refresh_token && expiresAt - now < 300) {
+            console.log('Token expired or expiring — attempting refresh on startup...');
+            try {
+              const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+                method: 'POST',
+                headers: {
+                  'apikey': SUPABASE_ANON_KEY,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ refresh_token: parsed.refresh_token })
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data?.access_token) {
+                  const updated = {
+                    ...parsed,
+                    access_token: data.access_token,
+                    refresh_token: data.refresh_token || parsed.refresh_token,
+                    expires_at: data.expires_at || (now + (data.expires_in || 604800)),
+                    user: data.user || parsed.user,
+                  };
+                  localStorage.setItem('parkmontage-auth', JSON.stringify(updated));
+                  console.log('Token refreshed successfully on startup');
+                }
+              } else {
+                console.warn('Token refresh failed on startup:', res.status);
+              }
+            } catch(refreshErr) {
+              console.warn('Token refresh error on startup:', refreshErr);
+            }
+          }
+        }
+
         // Read user directly from localStorage — no Supabase client calls
         const storedUser = getStoredUser();
         if (storedUser?.email) {
