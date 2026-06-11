@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkMontage — How It Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',system-ui,sans-serif;background:#f0f0ed;color:#111;min-height:100vh}
+
+/* ── Hero ── */
+.hero{background:#1a9e75;padding:48px 24px 40px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.03) 0,rgba(255,255,255,0.03) 1px,transparent 1px,transparent 14px)}
+.hero-emoji{font-size:52px;display:block;margin-bottom:8px}
+.hero h1{font-size:32px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:8px}
+.hero p{font-size:15px;color:rgba(255,255,255,0.82);max-width:360px;margin:0 auto 24px;line-height:1.6}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.18);color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;letter-spacing:0.04em;text-transform:uppercase}
+
+/* ── TOC ── */
+.toc{background:#fff;border-bottom:1px solid rgba(0,0,0,0.07);padding:16px 20px;display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.toc::-webkit-scrollbar{display:none}
+.toc-item{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;border:2px solid transparent;transition:all 0.15s}
+.toc-item.renter{background:#e1f5ee;color:#0a6e50;border-color:#9fe1cb}
+.toc-item.provider{background:#e6f1fb;color:#0c447c;border-color:#b5d4f4}
+.toc-item.release{background:#faeeda;color:#633806;border-color:#fac775}
+.toc-item:hover{filter:brightness(0.95)}
+
+/* ── Section ── */
+.section{padding:28px 16px 8px;max-width:680px;margin:0 auto}
+
+/* ── Story header ── */
+.story-header{border-radius:14px 14px 0 0;padding:18px 20px;margin-bottom:0}
+.story-header.renter{background:#1a9e75}
+.story-header.provider{background:#185fa5}
+.story-header.release{background:#c0720a}
+.story-header h2{font-size:20px;font-weight:900;color:#fff;margin-bottom:2px}
+.story-header p{font-size:13px;color:rgba(255,255,255,0.82)}
+
+/* ── Panel grid ── */
+.panels{background:#fff;border-radius:0 0 14px 14px;border:1.5px solid rgba(0,0,0,0.08);border-top:none;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+@media(max-width:520px){.panels{grid-template-columns:1fr}}
+
+/* ── Individual panel ── */
+.panel{border:1.5px solid rgba(0,0,0,0.09);border-radius:12px;padding:14px;background:#fafaf8;position:relative;overflow:hidden}
+.panel-num{position:absolute;top:10px;right:12px;font-size:28px;font-weight:900;color:rgba(0,0,0,0.06);line-height:1}
+.panel h3{font-size:14px;font-weight:800;color:#111;margin-bottom:2px;padding-right:28px}
+.panel .subtitle{font-size:11px;color:#888;margin-bottom:12px;line-height:1.4}
+
+/* ── Character ── */
+.character{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.char-face{flex-shrink:0}
+.bubble{background:#fff;border:1.5px solid #ddd;border-radius:14px 14px 14px 2px;padding:7px 11px;font-size:12px;line-height:1.45;color:#111;max-width:190px}
+.bubble.out{border-radius:14px 14px 2px 14px;background:#e8f7f2;border-color:#9fe1cb}
+
+/* ── SVG face helpers ── */
+.face{display:block}
+
+/* ── Screen mockup ── */
+.screen{background:#222;border-radius:12px;padding:3px;display:inline-block;margin:8px auto 0;width:100%;max-width:180px}
+.screen-inner{background:#f8f8f8;border-radius:10px;padding:8px;min-height:60px}
+.screen-row{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:6px;margin-bottom:4px;font-size:11px;font-weight:600}
+.screen-row.available{background:#e1f5ee;color:#0a6e50}
+.screen-row.pending{background:#e6f1fb;color:#185fa5}
+.screen-row.inuse{background:#faeeda;color:#7a4a0a}
+.screen-row.approved{background:#eaf3de;color:#3b6d11}
+.checkbox{width:14px;height:14px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px}
+.checkbox.checked{background:#1a9e75;color:#fff}
+.checkbox.empty{border:2px solid #ccc;background:#fff}
+.tab-bar{display:flex;gap:3px;margin-top:6px;padding-top:6px;border-top:1px solid #eee}
+.tab-btn{flex:1;text-align:center;font-size:8px;font-weight:700;padding:3px 2px;border-radius:5px;color:#aaa}
+.tab-btn.active.g{background:#e1f5ee;color:#1a9e75}
+.tab-btn.active.b{background:#e6f1fb;color:#185fa5}
+
+/* ── Big action button ── */
+.action-btn{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:800;width:100%;margin-top:8px;cursor:default}
+.action-btn.green{background:#1a9e75;color:#fff}
+.action-btn.blue{background:#185fa5;color:#fff}
+.action-btn.red{background:#c0392b;color:#fff}
+.action-btn.outline{background:#fff;color:#111;border:2px solid #ddd}
+
+/* ── Notification ── */
+.notif{background:#fff;border:1.5px solid #ddd;border-radius:10px;padding:8px 10px;font-size:11px;margin-top:8px}
+.notif-header{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.notif-app{font-weight:800;font-size:10px;color:#185fa5}
+.notif-body{color:#555;line-height:1.4}
+
+/* ── Toggle row ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px}
+.toggle-row span{font-weight:700;color:#111}
+.toggle{width:36px;height:20px;border-radius:10px;position:relative;flex-shrink:0}
+.toggle.on{background:#1a9e75}
+.toggle.off{background:#ddd}
+.toggle::after{content:'';position:absolute;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.on::after{left:19px}
+.toggle.off::after{left:3px}
+
+/* ── Big result ── */
+.result-box{border-radius:12px;padding:14px;text-align:center;margin-top:8px}
+.result-box.success{background:#e1f5ee;border:1.5px solid #9fe1cb}
+.result-box.success .icon{font-size:32px;display:block;margin-bottom:6px}
+.result-box strong{font-size:14px;font-weight:800;color:#0a6e50;display:block;margin-bottom:2px}
+.result-box p{font-size:11px;color:#1a9e75}
+
+/* ── Tip box ── */
+.tip{background:#fffbe6;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:12px;color:#78350f;line-height:1.5;margin-top:10px;display:flex;gap:8px;align-items:flex-start}
+.tip-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* ── Divider ── */
+.versus{text-align:center;padding:8px 0 20px;font-size:12px;font-weight:700;color:#bbb;letter-spacing:0.06em;text-transform:uppercase}
+
+/* ── Footer ── */
+.footer{text-align:center;padding:32px 20px 48px;color:#bbb;font-size:12px}
+.footer a{color:#1a9e75;font-weight:700;text-decoration:none}
+
+/* ── Date input visual ── */
+.date-row{display:flex;gap:6px;margin-top:8px}
+.date-box{flex:1;border:1.5px solid #1a9e75;border-radius:7px;padding:5px 8px;font-size:10px;background:#fff}
+.date-box .lbl{color:#888;font-size:9px;font-weight:600;margin-bottom:1px}
+.date-box .val{color:#111;font-weight:700}
+
+/* ── Section spacer ── */
+.spacer{height:24px}
+
+/* ── Message input ── */
+.msg-box{border:1.5px solid #1a9e75;border-radius:8px;padding:8px;font-size:11px;color:#444;background:#fff;margin-top:8px;line-height:1.5}
+.msg-box .lbl{font-size:9px;font-weight:700;color:#888;margin-bottom:3px}
+
+/* ── Approve/decline pair ── */
+.btn-pair{display:flex;gap:6px;margin-top:8px}
+.btn-pair .btn{flex:1;border-radius:8px;padding:8px;font-size:12px;font-weight:800;text-align:center;cursor:default}
+.btn-pair .btn.decline{background:#fcebeb;color:#a32d2d;border:1.5px solid #e8a8a8}
+.btn-pair .btn.approve{background:#1a9e75;color:#fff}
+
+/* ── Pulse ring animation for approved ── */
+@keyframes pulse-ring{0%{transform:scale(0.8);opacity:0.8}100%{transform:scale(1.4);opacity:0}}
+.pulse{position:relative;display:inline-block}
+.pulse::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:3px solid #1a9e75;animation:pulse-ring 1.4s ease-out infinite}
+
+</style>
+</head>
+<body>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <span class="hero-emoji">🚗</span>
+  <h1>How ParkMontage works</h1>
+  <p>Share your parking space with neighbors, or find one when you need it most. Here's everything you need to know.</p>
+  <span class="hero-badge">📍 Montage community guide</span>
+</div>
+
+<!-- ── TOC ── -->
+<nav class="toc" aria-label="Jump to section">
+  <a class="toc-item renter" href="#find">🔍 Finding a space</a>
+  <a class="toc-item provider" href="#publish">🅿 Publishing your space</a>
+  <a class="toc-item provider" href="#approve">✅ Approving a request</a>
+  <a class="toc-item release" href="#release">🔑 Releasing a space</a>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     SECTION 1: FINDING & REQUESTING
+════════════════════════════════════════ -->
+<div class="section" id="find">
+
+  <!-- Renter story -->
+  <div class="story-header renter">
+    <h2>🚗 You need a parking spot</h2>
+    <p>Your guests are coming. You need extra parking. Here's what to do.</p>
+  </div>
+  <div class="panels">
+
+    <!-- Panel 1 -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>Open Find Space</h3>
+      <div class="subtitle">Tap "Find space" in the bottom bar</div>
+      <div class="character">
+        <div class="char-face">
+          <!-- renter guy SVG face -->
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M16 30 Q22 27 28 30" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">My guests arrive Friday — I need a spot!</div>
+      </div>
+      <div class="screen">
+        <div class="screen-inner">
+          <div style="font-size:10px;font-weight:800;color:#111;margin-bottom:6px">Find a space</div>
+          <div style="background:#f0f0ed;border-radius:5px;padding:5px 6px;font-size:9px;color:#888;margin-bottom:4px">From date</div>
+          <div style="background:#f0f0ed;border-radius:5px;padding:5px 6px;font-size:9px;color:#888;margin-bottom:6px">To date</div>
+          <div class="tab-bar">
+            <div class="tab-btn active g">Find</div>
+            <div class="tab-btn">Sessions</div>
+            <div class="tab-btn">Spaces</div>
+            <div class="tab-btn">Acct</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2 -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Pick your dates</h3>
+      <div class="subtitle">Choose start and end dates, then tap Search</div>
+      <div class="character">
+        <div class="char-face">
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M16 29 Q22 34 28 29" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">Jun 15 to Jun 22 — perfect!</div>
+      </div>
+      <div class="date-row">
+        <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 15</div></div>
+        <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 22</div></div>
+      </div>
+      <div class="action-btn green" style="margin-top:8px;font-size:12px;padding:8px">🔍 Find available spaces</div>
+    </div>
+
+    <!-- Panel 3 -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>Pick a space</h3>
+      <div class="subtitle">Tap a card to select it — you can pick more than one!</div>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:8px;background:#f0faf6;border:1.5px solid #1a9e75;border-radius:8px;padding:7px 9px">
+          <div class="checkbox checked">✓</div>
+          <div>
+            <div style="font-size:11px;font-weight:800">12 Oak Lane</div>
+            <div style="font-size:10px;color:#888">Sam · Left spot</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:7px 9px">
+          <div class="checkbox empty"></div>
+          <div>
+            <div style="font-size:11px;font-weight:800">8 Maple Rd</div>
+            <div style="font-size:10px;color:#888">Linda · Right spot</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:7px 9px">
+          <div class="checkbox empty"></div>
+          <div>
+            <div style="font-size:11px;font-weight:800">5 Birch Close</div>
+            <div style="font-size:10px;color:#888">Dave · Left spot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 4 -->
+    <div class="panel">
+      <div class="panel-num">4</div>
+      <h3>Send a friendly note</h3>
+      <div class="subtitle">Add a message, then tap Send request</div>
+      <div class="msg-box">
+        <div class="lbl">MESSAGE TO OWNER</div>
+        Hi! My parents are visiting and they need a spot for the week. Really appreciate it! 🙏
+      </div>
+      <div class="action-btn green" style="margin-top:8px;font-size:12px;padding:8px">✉ Send request</div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M16 29 Q22 34 28 29" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">Fingers crossed! 🤞</div>
+      </div>
+    </div>
+
+    <!-- Panel 5 -->
+    <div class="panel">
+      <div class="panel-num">5</div>
+      <h3>Now… you wait</h3>
+      <div class="subtitle">Your request shows as "Awaiting approval" in My Sessions</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My Sessions</div>
+          <div class="screen-row pending">⏳ Awaiting approval</div>
+          <div style="font-size:9px;color:#888;padding:4px 4px 0">12 Oak Lane · Left spot<br>Jun 15 – Jun 22</div>
+        </div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2.5" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2.5" fill="#333"/>
+            <path d="M16 30 Q22 27 28 30" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+            <text x="34" y="12" style="font:700 8px sans-serif;fill:#6af">z</text>
+            <text x="38" y="8" style="font:700 10px sans-serif;fill:#adf">z</text>
+          </svg>
+        </div>
+        <div class="bubble">Checking my phone every 5 mins… 😬</div>
+      </div>
+    </div>
+
+    <!-- Panel 6 -->
+    <div class="panel" style="background:#f0faf6;border-color:#9fe1cb">
+      <div class="panel-num" style="color:rgba(10,110,80,0.15)">6</div>
+      <h3 style="color:#0a6e50">You're approved! 🎉</h3>
+      <div class="subtitle" style="color:#1a9e75">You'll get an email notification right away</div>
+      <div class="notif">
+        <div class="notif-header">
+          <div class="notif-dot" style="background:#1a9e75"></div>
+          <span class="notif-app" style="color:#1a9e75">ParkMontage</span>
+          <span style="font-size:9px;color:#bbb;margin-left:auto">just now</span>
+        </div>
+        <div class="notif-body">🎉 Your request for the Left spot at <strong>12 Oak Lane</strong> is approved! Jun 15–22, 6AM–6PM.</div>
+      </div>
+      <div class="result-box success" style="margin-top:10px">
+        <span class="icon">
+          <span class="pulse" style="display:inline-block">✅</span>
+        </span>
+        <strong>Space confirmed!</strong>
+        <p>Available from 6AM on Jun 15<br>until 6PM on Jun 22</p>
+      </div>
+    </div>
+
+  </div><!-- /panels -->
+
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>You can request multiple spaces in one go — handy if you're not sure who'll approve first. The first approval wins!</span>
+  </div>
+
+</div><!-- /section find -->
+
+
+<div class="spacer"></div>
+<div class="versus">— meanwhile, across the street —</div>
+
+
+<!-- ══════════════════════════════════════
+     SECTION 2: PUBLISHING A SPACE
+════════════════════════════════════════ -->
+<div class="section" id="publish">
+
+  <div class="story-header provider">
+    <h2>🏠 Part 1 — Publishing your space</h2>
+    <p>You know you won't need your spot for a few weeks. Here's how to put it on the map.</p>
+  </div>
+  <div class="panels">
+
+    <!-- Panel 1: Open My Spaces -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>Open My Spaces</h3>
+      <div class="subtitle">Tap "My spaces" at the bottom of the app</div>
+      <div class="character">
+        <div class="char-face">
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">I'm away for 3 weeks — might as well share my spot! 🏖</div>
+      </div>
+      <div class="screen">
+        <div class="screen-inner">
+          <div style="font-size:10px;font-weight:800;color:#111;margin-bottom:6px">My spaces</div>
+          <div class="toggle-row" style="margin-top:0;font-size:10px">
+            <span>Left space</span>
+            <div class="toggle off"></div>
+          </div>
+          <div class="toggle-row" style="font-size:10px">
+            <span>Right space</span>
+            <div class="toggle off"></div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-btn">Find</div>
+            <div class="tab-btn">Sessions</div>
+            <div class="tab-btn active b">Spaces</div>
+            <div class="tab-btn">Acct</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Flip toggle -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Flip the toggle</h3>
+      <div class="subtitle">Tap the switch next to the space you want to share</div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:12px;font-weight:800">Left space</div>
+          <div style="font-size:10px;color:#888">Not shared → flip to share</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div style="margin-top:10px;text-align:center">
+        <div style="font-size:22px">👆</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">A date picker will appear</div>
+      </div>
+      <div class="character" style="margin-top:8px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Here we go! 🎉</div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Set dates -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>Set your dates</h3>
+      <div class="subtitle">Choose the window when your space is available</div>
+      <div style="background:#f0faf6;border:1.5px solid #9fe1cb;border-radius:10px;padding:12px;margin-top:6px">
+        <div style="font-size:10px;font-weight:800;color:#0a6e50;margin-bottom:8px">SET AVAILABILITY WINDOW</div>
+        <div class="date-row" style="margin-top:0">
+          <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 10</div></div>
+          <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 30</div></div>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:8px;text-align:center">6AM on Jun 10 · until 6PM on Jun 30</div>
+      </div>
+      <div class="action-btn blue" style="margin-top:8px;font-size:12px;padding:8px">✓ Save</div>
+    </div>
+
+    <!-- Panel 4: Space is live -->
+    <div class="panel" style="background:#e8f2fc;border-color:#b5d4f4">
+      <div class="panel-num" style="color:rgba(24,95,165,0.12)">4</div>
+      <h3 style="color:#0c447c">Your space is live! 🎉</h3>
+      <div class="subtitle" style="color:#185fa5">Neighbors searching those dates will find it</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My spaces</div>
+          <div style="background:#e1f5ee;border:1px solid #9fe1cb;border-radius:6px;padding:6px 8px">
+            <div style="font-size:9px;font-weight:800;color:#0a6e50">✓ Available</div>
+            <div style="font-size:8px;color:#888;margin-top:2px">Left space · Jun 10–30</div>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:5px">
+            <div style="background:#e6f1fb;color:#185fa5;font-size:7px;font-weight:700;padding:3px 5px;border-radius:5px">📅 Edit dates</div>
+            <div style="background:#f0f0ed;color:#666;font-size:7px;font-weight:700;padding:3px 5px;border-radius:5px">Toggle off to unshare</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;background:#e6f1fb;border-radius:8px;padding:8px;font-size:11px;color:#185fa5;text-align:center;font-weight:700">
+        Now just sit back and wait for requests 🏖
+      </div>
+    </div>
+
+  </div><!-- /publish panels -->
+
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>Changed your mind? Just flip the toggle back off at any time — as long as no one has been approved yet.</span>
+  </div>
+
+</div><!-- /section publish -->
+
+
+<div class="spacer"></div>
+<div class="versus">— some days later, a notification appears —</div>
+
+
+<!-- ══════════════════════════════════════
+     SECTION 3: APPROVING A REQUEST
+════════════════════════════════════════ -->
+<div class="section" id="approve">
+
+  <div class="story-header provider">
+    <h2>🏠 Part 2 — Approving a request</h2>
+    <p>A neighbor has spotted your space and wants it. Here's what happens next.</p>
+  </div>
+  <div class="panels">
+
+    <!-- Panel 1: Request arrives -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>A request arrives!</h3>
+      <div class="subtitle">You get an email and a badge appears on My Spaces</div>
+      <div class="notif">
+        <div class="notif-header">
+          <div class="notif-dot" style="background:#185fa5"></div>
+          <span class="notif-app">ParkMontage</span>
+          <span style="font-size:9px;color:#bbb;margin-left:auto">2 min ago</span>
+        </div>
+        <div class="notif-body">🅿 New request! <strong>Bob</strong> wants your Left spot Jun 15–22. Open app to review.</div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <!-- surprised O-mouth face -->
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="5" ry="6" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="3" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="5" ry="6" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="3" fill="#333"/>
+            <!-- raised surprise eyebrows -->
+            <path d="M12 13 Q16 10 20 13" stroke="#333" stroke-width="1.2" fill="none"/>
+            <path d="M24 13 Q28 10 32 13" stroke="#333" stroke-width="1.2" fill="none"/>
+            <!-- O-mouth -->
+            <ellipse cx="22" cy="30" rx="5" ry="5" fill="#fff" stroke="#555" stroke-width="1"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Oh! Someone wants my spot already! 😮</div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Review badge -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Open My Spaces</h3>
+      <div class="subtitle">A red badge shows how many requests are waiting</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">Pending requests</div>
+          <div style="background:#e6f1fb;border:1.5px solid #b5d4f4;border-radius:6px;padding:6px 8px;position:relative">
+            <div style="font-size:9px;font-weight:800;color:#185fa5">★ NEW REQUEST</div>
+            <div style="font-size:8px;color:#888;margin-top:2px">Bob · 12 Oak Lane</div>
+            <div style="font-size:8px;color:#888">Left spot · Jun 15–22</div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-btn">Find</div>
+            <div class="tab-btn">Sessions</div>
+            <div class="tab-btn active b" style="position:relative">Spaces
+              <span style="position:absolute;top:-4px;right:-2px;background:#e24b4a;color:#fff;font-size:7px;font-weight:700;width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center">1</span>
+            </div>
+            <div class="tab-btn">Acct</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Read the request -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>Read the request</h3>
+      <div class="subtitle">See who's asking, their address, their message</div>
+      <div style="background:#e6f1fb;border:1.5px solid #b5d4f4;border-radius:8px;padding:10px;font-size:11px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <svg width="28" height="28" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <circle cx="17" cy="21" r="3" fill="#333"/>
+            <circle cx="27" cy="21" r="3" fill="#333"/>
+            <path d="M17 29 Q22 33 27 29" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+          <div>
+            <div style="font-weight:800;color:#111">Bob • 12 Oak Lane</div>
+            <div style="color:#888;font-size:10px">Left spot · Jun 15–22</div>
+          </div>
+          <span style="margin-left:auto;background:#e6f1fb;color:#185fa5;font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;border:1px solid #b5d4f4">NEW</span>
+        </div>
+        <div style="border-top:1px solid #dde8f5;padding-top:6px;color:#444;font-style:italic">"My parents are visiting and need a spot. Really appreciate it!"</div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Bob's nice. I know that family! 😊</div>
+      </div>
+    </div>
+
+    <!-- Panel 4: Approve or decline -->
+    <div class="panel">
+      <div class="panel-num">4</div>
+      <h3>Approve or decline</h3>
+      <div class="subtitle">Tap Approve — Bob gets an email confirmation instantly</div>
+      <div class="btn-pair" style="margin-top:12px">
+        <div class="btn decline">✕ Decline</div>
+        <div class="btn approve">✓ Approve</div>
+      </div>
+      <div style="margin-top:10px;text-align:center">
+        <div style="font-size:26px">☝️</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">Bob's phone lights up the moment you tap!</div>
+      </div>
+      <div class="character" style="margin-top:8px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Of course! Good neighbor vibes! 😊</div>
+      </div>
+    </div>
+
+    <!-- Panel 5: Chat -->
+    <div class="panel">
+      <div class="panel-num">5</div>
+      <h3>Chat if you need to</h3>
+      <div class="subtitle">Tap Messages on any session to talk directly with the renter</div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
+        <div style="background:#efefec;color:#111;padding:7px 11px;border-radius:14px 14px 14px 3px;font-size:11px;line-height:1.4;max-width:85%">Hi Sam! We'll arrive Friday morning 🙏</div>
+        <div style="background:#1a9e75;color:#fff;padding:7px 11px;border-radius:14px 14px 3px 14px;font-size:11px;line-height:1.4;max-width:85%;margin-left:auto">No problem! Space is on the left side of the driveway.</div>
+        <div style="background:#efefec;color:#111;padding:7px 11px;border-radius:14px 14px 14px 3px;font-size:11px;line-height:1.4;max-width:85%">Perfect, thanks so much! 🎉</div>
+      </div>
+    </div>
+
+    <!-- Panel 6: Space in use -->
+    <div class="panel" style="background:#e8f2fc;border-color:#b5d4f4">
+      <div class="panel-num" style="color:rgba(24,95,165,0.12)">6</div>
+      <h3 style="color:#0c447c">Space is now in use 🚗</h3>
+      <div class="subtitle" style="color:#185fa5">Status flips to "In use" automatically after approval</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My spaces</div>
+          <div class="screen-row inuse">🚗 In use — Bob</div>
+          <div style="font-size:9px;color:#888;padding:4px 4px 0">Left spot · Jun 15 – Jun 22</div>
+          <div style="display:flex;gap:4px;margin-top:6px">
+            <div style="background:#e6f1fb;color:#185fa5;font-size:8px;font-weight:700;padding:3px 6px;border-radius:6px">💬 Messages</div>
+            <div style="background:#eaf3de;color:#3b6d11;font-size:8px;font-weight:700;padding:3px 6px;border-radius:6px">✓ Confirm vacated</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px">
+        <svg width="32" height="32" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+          <circle cx="17" cy="21" r="3" fill="#333"/>
+          <circle cx="27" cy="21" r="3" fill="#333"/>
+          <path d="M17 29 Q22 33 27 29" stroke="#555" stroke-width="1.2" fill="none"/>
+          <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+        </svg>
+        <div style="font-size:18px">👋</div>
+        <svg width="32" height="32" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+          <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+          <circle cx="16" cy="21" r="2" fill="#333"/>
+          <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+          <circle cx="28" cy="21" r="2" fill="#333"/>
+          <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+          <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+        </svg>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#185fa5;font-weight:600;margin-top:6px">Good neighbors! 🎉</div>
+    </div>
+
+  </div><!-- /approve panels -->
+
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>You'll get email reminders the day before the session starts, the day before it ends, and on the last day — so there are no surprises for either side.</span>
+  </div>
+
+</div><!-- /section approve -->
+
+
+<div class="spacer"></div>
+
+
+<!-- ══════════════════════════════════════
+     SECTION 3: RELEASING A SPACE
+════════════════════════════════════════ -->
+<div class="section" id="release">
+
+  <!-- ── Renter release story ── -->
+  <div class="story-header release">
+    <h2>🚗 The Renter's story — "Time to go!"</h2>
+    <p>Your stay is ending. Here's how to hand the space back gracefully.</p>
+  </div>
+  <div class="panels">
+
+    <!-- R1: Last day reminder -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>You get a reminder</h3>
+      <div class="subtitle">Email arrives the day before and on the last day</div>
+      <div class="notif" style="border-color:#fac775;background:#fffbf0">
+        <div class="notif-header">
+          <div class="notif-dot" style="background:#c0720a"></div>
+          <span class="notif-app" style="color:#c0720a">ParkMontage</span>
+          <span style="font-size:9px;color:#bbb;margin-left:auto">8:00 AM</span>
+        </div>
+        <div class="notif-body" style="color:#633806">⏰ Your session at <strong>12 Oak Lane</strong> ends <strong>today at 6PM</strong>. Please move your car and release in the app.</div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <!-- renter, surprised/startled -->
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2.5" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2.5" fill="#333"/>
+            <!-- raised eyebrows - surprised -->
+            <path d="M12 13 Q16 10 20 13" stroke="#333" stroke-width="1.2" fill="none"/>
+            <path d="M24 13 Q28 10 32 13" stroke="#333" stroke-width="1.2" fill="none"/>
+            <!-- O mouth -->
+            <ellipse cx="22" cy="30" rx="5" ry="5" fill="#fff" stroke="#555" stroke-width="1"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">Already?! Time flies when you're parking! ⏰</div>
+      </div>
+    </div>
+
+    <!-- R2: Move the car -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Move your car out</h3>
+      <div class="subtitle">Before 6PM on the last day — don't be that neighbor!</div>
+      <!-- cartoon: car driving away -->
+      <div style="background:#f0f8f0;border-radius:10px;padding:12px;margin:8px 0;text-align:center">
+        <svg width="160" height="80" viewBox="0 0 160 80">
+          <!-- road -->
+          <rect x="0" y="55" width="160" height="20" fill="#ccc" rx="3"/>
+          <rect x="0" y="63" width="160" height="4" fill="#bbb"/>
+          <!-- dashed centre line -->
+          <line x1="10" y1="65" x2="30" y2="65" stroke="#fff" stroke-width="2" stroke-dasharray="6,6"/>
+          <line x1="50" y1="65" x2="70" y2="65" stroke="#fff" stroke-width="2" stroke-dasharray="6,6"/>
+          <line x1="90" y1="65" x2="110" y2="65" stroke="#fff" stroke-width="2" stroke-dasharray="6,6"/>
+          <!-- car body -->
+          <rect x="60" y="33" width="65" height="24" rx="6" fill="#4a7eff" stroke="#333" stroke-width="1.5"/>
+          <!-- car roof -->
+          <rect x="70" y="22" width="40" height="16" rx="5" fill="#4a7eff" stroke="#333" stroke-width="1.5"/>
+          <!-- windows -->
+          <rect x="73" y="24" width="14" height="11" rx="2" fill="#d0e8ff" stroke="#333" stroke-width="1"/>
+          <rect x="91" y="24" width="14" height="11" rx="2" fill="#d0e8ff" stroke="#333" stroke-width="1"/>
+          <!-- wheels -->
+          <circle cx="78" cy="57" r="8" fill="#333"/>
+          <circle cx="78" cy="57" r="4" fill="#888"/>
+          <circle cx="110" cy="57" r="8" fill="#333"/>
+          <circle cx="110" cy="57" r="4" fill="#888"/>
+          <!-- headlights -->
+          <rect x="122" y="39" width="5" height="8" rx="2" fill="#ffe066" stroke="#333" stroke-width="0.8"/>
+          <!-- motion lines -->
+          <line x1="40" y1="38" x2="58" y2="38" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <line x1="32" y1="45" x2="58" y2="45" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <line x1="36" y1="52" x2="58" y2="52" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <!-- exhaust puff -->
+          <ellipse cx="52" cy="47" rx="6" ry="4" fill="#ddd" opacity="0.7"/>
+          <ellipse cx="44" cy="44" rx="5" ry="4" fill="#ddd" opacity="0.5"/>
+          <ellipse cx="36" cy="42" rx="4" ry="3" fill="#ddd" opacity="0.3"/>
+        </svg>
+        <div style="font-size:10px;color:#888;margin-top:2px;font-style:italic">Vroom! Thanks for the spot, Sam! 👋</div>
+      </div>
+      <div class="character">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <circle cx="17" cy="21" r="3" fill="#333"/>
+            <circle cx="27" cy="21" r="3" fill="#333"/>
+            <path d="M17 29 Q22 34 27 29" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">Spot's empty — now to release it in the app!</div>
+      </div>
+    </div>
+
+    <!-- R3: Tap Release -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>Tap "Release space"</h3>
+      <div class="subtitle">Go to My Sessions — find your active session</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My sessions</div>
+          <div style="background:#faeeda;border:1px solid #fac775;border-radius:6px;padding:6px 8px;margin-bottom:5px">
+            <div style="font-size:9px;font-weight:800;color:#7a4a0a">🚗 In use</div>
+            <div style="font-size:8px;color:#888;margin-top:2px">12 Oak Lane · Left spot</div>
+            <div style="font-size:8px;color:#888">Jun 15 – Jun 22</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <div style="background:#f0f0f0;color:#555;font-size:7px;font-weight:700;padding:3px 6px;border-radius:5px">💬 Messages</div>
+            <div style="background:#fcebeb;color:#a32d2d;font-size:7px;font-weight:700;padding:3px 6px;border-radius:5px;border:1px solid #e8a8a8">🔑 Release space</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;text-align:center">
+        <div style="font-size:24px">☝️</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">Tap "Release space" to notify Sam</div>
+      </div>
+    </div>
+
+    <!-- R4: Message auto-sent -->
+    <div class="panel">
+      <div class="panel-num">4</div>
+      <h3>A message is sent for you</h3>
+      <div class="subtitle">The app pings Sam automatically — nothing to type!</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+        <div style="background:#efefec;color:#111;padding:8px 11px;border-radius:14px 14px 14px 3px;font-size:11px;line-height:1.45;max-width:85%">I have removed my car from your space. Please confirm it's vacated. Thanks for sharing!</div>
+        <div style="font-size:9px;color:#bbb;padding-left:4px">sent automatically · just now</div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <circle cx="17" cy="21" r="3" fill="#333"/>
+            <circle cx="27" cy="21" r="3" fill="#333"/>
+            <path d="M17 29 Q22 34 27 29" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">Done my part! Ball's in Sam's court now 🎾</div>
+      </div>
+    </div>
+
+    <!-- R5: Waiting for confirm -->
+    <div class="panel">
+      <div class="panel-num">5</div>
+      <h3>Waiting for confirmation</h3>
+      <div class="subtitle">Status shows "Awaiting confirmation" until Sam checks</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div class="screen-row" style="background:#faeeda;color:#7a4a0a">⏳ Awaiting confirmation</div>
+          <div style="font-size:8px;color:#888;padding:4px 4px 0">Sam is verifying the space is clear</div>
+        </div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <!-- drowsy waiting face -->
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <!-- half-closed eyes -->
+            <ellipse cx="16" cy="21" rx="5" ry="3" fill="#fff" stroke="#333" stroke-width="1"/>
+            <ellipse cx="16" cy="22" rx="3" ry="1.5" fill="#333"/>
+            <ellipse cx="28" cy="21" rx="5" ry="3" fill="#fff" stroke="#333" stroke-width="1"/>
+            <ellipse cx="28" cy="22" rx="3" ry="1.5" fill="#333"/>
+            <path d="M17 29 Q22 27 27 29" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+            <text x="34" y="14" style="font:700 8px sans-serif;fill:#6af">z</text>
+            <text x="38" y="9" style="font:700 10px sans-serif;fill:#adf">z</text>
+          </svg>
+        </div>
+        <div class="bubble">Just checking my phone again… and again… 📱</div>
+      </div>
+    </div>
+
+    <!-- R6: Session released -->
+    <div class="panel" style="background:#f0faf6;border-color:#9fe1cb">
+      <div class="panel-num" style="color:rgba(10,110,80,0.1)">6</div>
+      <h3 style="color:#0a6e50">All done! 🎉</h3>
+      <div class="subtitle" style="color:#1a9e75">Sam confirmed — session moves to "Past"</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">Past sessions</div>
+          <div class="screen-row" style="background:#f0f0ed;color:#666">✓ Released</div>
+          <div style="font-size:8px;color:#888;padding:4px 4px 0">12 Oak Lane · Jun 15–22</div>
+        </div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <circle cx="16" cy="19" r="1" fill="#fff"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <circle cx="28" cy="19" r="1" fill="#fff"/>
+            <path d="M16 29 Q22 35 28 29" stroke="#555" stroke-width="1.5" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+            <!-- stars -->
+            <text x="2" y="14" style="font:10px sans-serif">★</text>
+            <text x="34" y="12" style="font:10px sans-serif">★</text>
+          </svg>
+        </div>
+        <div class="bubble" style="background:#e8f7f2;border-color:#9fe1cb">Great neighbors make great communities! 🌟</div>
+      </div>
+    </div>
+
+  </div><!-- /renter panels -->
+
+  <div class="tip" style="margin-bottom:20px">
+    <span class="tip-icon">⏰</span>
+    <span>The app sends you reminders the day before your session ends AND on the last day — so you'll never forget to move the car!</span>
+  </div>
+
+  <!-- divider between renter and provider -->
+  <div style="text-align:center;padding:4px 0 20px;font-size:12px;font-weight:700;color:#bbb;letter-spacing:0.06em;text-transform:uppercase">— meanwhile, Sam gets a notification —</div>
+
+  <!-- ── Provider release story ── -->
+  <div class="story-header" style="background:#c0720a;border-radius:14px 14px 0 0">
+    <h2>🏠 The Provider's story — "Is my spot free?"</h2>
+    <p>Bob says he's done. Time to check and confirm the space is back.</p>
+  </div>
+  <div class="panels">
+
+    <!-- P1: Email arrives -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>Email: space has been released</h3>
+      <div class="subtitle">You get notified the moment Bob taps "Release"</div>
+      <div class="notif" style="border-color:#fac775;background:#fffbf0">
+        <div class="notif-header">
+          <div class="notif-dot" style="background:#c0720a"></div>
+          <span class="notif-app" style="color:#c0720a">ParkMontage</span>
+          <span style="font-size:9px;color:#bbb;margin-left:auto">just now</span>
+        </div>
+        <div class="notif-body" style="color:#633806">🔑 <strong>Bob</strong> has removed his car from your Left space. Please verify it's clear and confirm in the app.</div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Time to inspect my driveway! 🕵️‍♀️</div>
+      </div>
+    </div>
+
+    <!-- P2: Go check -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Go check the space</h3>
+      <div class="subtitle">Take a quick look — is the spot actually empty?</div>
+      <!-- cartoon: empty driveway -->
+      <div style="background:#f0f8f0;border-radius:10px;padding:10px;margin:8px 0;text-align:center">
+        <svg width="160" height="90" viewBox="0 0 160 90">
+          <!-- sky -->
+          <rect x="0" y="0" width="160" height="55" fill="#e8f4ff" rx="6"/>
+          <!-- sun -->
+          <circle cx="130" cy="18" r="12" fill="#ffe066" stroke="#ffd000" stroke-width="1"/>
+          <line x1="130" y1="2" x2="130" y2="6" stroke="#ffd000" stroke-width="1.5"/>
+          <line x1="130" y1="30" x2="130" y2="34" stroke="#ffd000" stroke-width="1.5"/>
+          <line x1="114" y1="18" x2="118" y2="18" stroke="#ffd000" stroke-width="1.5"/>
+          <line x1="142" y1="18" x2="146" y2="18" stroke="#ffd000" stroke-width="1.5"/>
+          <!-- house -->
+          <rect x="10" y="20" width="45" height="35" fill="#fff" stroke="#ccc" stroke-width="1"/>
+          <polygon points="10,20 32,6 55,20" fill="#c66a00" stroke="#a85500" stroke-width="1"/>
+          <rect x="24" y="32" width="16" height="23" fill="#8B4513" stroke="#633806" stroke-width="1"/>
+          <!-- driveway -->
+          <rect x="0" y="55" width="160" height="35" fill="#ccc" rx="0"/>
+          <rect x="55" y="55" width="55" height="35" fill="#bbb"/>
+          <!-- parking lines -->
+          <line x1="70" y1="57" x2="70" y2="88" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4"/>
+          <line x1="95" y1="57" x2="95" y2="88" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4"/>
+          <!-- empty space indicator -->
+          <text x="82" y="76" text-anchor="middle" style="font:700 11px sans-serif;fill:#aaa">EMPTY</text>
+          <text x="82" y="87" text-anchor="middle" style="font:400 8px sans-serif;fill:#bbb">✓ all clear</text>
+        </svg>
+        <div style="font-size:10px;color:#1a9e75;font-weight:700;margin-top:2px">Empty! Bob's gone. ✅</div>
+      </div>
+    </div>
+
+    <!-- P3: Open app, see banner -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>Open My Spaces</h3>
+      <div class="subtitle">A yellow banner warns you — confirmation needed</div>
+      <div style="background:#faeeda;border:1.5px solid #fac775;border-radius:8px;padding:10px;font-size:11px;margin:8px 0;color:#633806;display:flex;gap:8px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">⚠️</span>
+        <div><strong>Bob has released the space.</strong> Please verify the car has been removed, then confirm below.</div>
+      </div>
+      <div class="character">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Yep, it's clear. Let me confirm! 📱</div>
+      </div>
+    </div>
+
+    <!-- P4: Tap Confirm -->
+    <div class="panel">
+      <div class="panel-num">4</div>
+      <h3>Tap "Confirm vacated"</h3>
+      <div class="subtitle">One tap and the session is officially closed</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <div style="flex:1;background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:8px;font-size:11px;font-weight:800;text-align:center;color:#555">💬 Messages</div>
+        <div style="flex:1;background:#185fa5;border-radius:8px;padding:8px;font-size:11px;font-weight:800;text-align:center;color:#fff">✓ Confirm vacated</div>
+      </div>
+      <div style="margin-top:12px;text-align:center">
+        <div style="font-size:22px">☝️</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">This closes the session for both of you</div>
+      </div>
+      <div class="character" style="margin-top:8px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Done! What a smooth transaction! 😎</div>
+      </div>
+    </div>
+
+    <!-- P5: Space restored -->
+    <div class="panel">
+      <div class="panel-num">5</div>
+      <h3>Space is restored</h3>
+      <div class="subtitle">Any remaining days? Your space goes back to "Available" automatically!</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:8px;background:#faeeda;border:1.5px solid #fac775;border-radius:8px;padding:8px 10px">
+          <div style="font-size:16px">🗓</div>
+          <div>
+            <div style="font-size:11px;font-weight:800;color:#7a4a0a">Session was Jun 15–22</div>
+            <div style="font-size:10px;color:#888">Original window: Jun 10–30</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:16px;color:#1a9e75">↓</div>
+        <div style="display:flex;align-items:center;gap:8px;background:#e1f5ee;border:1.5px solid #9fe1cb;border-radius:8px;padding:8px 10px">
+          <div style="font-size:16px">✅</div>
+          <div>
+            <div style="font-size:11px;font-weight:800;color:#0a6e50">Space available again</div>
+            <div style="font-size:10px;color:#1a9e75">Jun 23–30 · automatically!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P6: Happy ending -->
+    <div class="panel" style="background:#fff8ee;border-color:#fac775">
+      <div class="panel-num" style="color:rgba(192,114,10,0.1)">6</div>
+      <h3 style="color:#7a4a0a">Mission accomplished! 🏁</h3>
+      <div class="subtitle" style="color:#c0720a">Session complete — you helped a neighbor!</div>
+      <!-- both characters waving -->
+      <div style="display:flex;justify-content:center;align-items:flex-end;gap:10px;margin:12px 0 6px">
+        <!-- renter waving from car -->
+        <div style="text-align:center">
+          <svg width="48" height="60" viewBox="0 0 48 80">
+            <!-- car -->
+            <rect x="4" y="44" width="40" height="18" rx="5" fill="#4a7eff" stroke="#333" stroke-width="1.5"/>
+            <rect x="10" y="34" width="24" height="14" rx="4" fill="#4a7eff" stroke="#333" stroke-width="1.5"/>
+            <rect x="12" y="36" width="8" height="10" rx="2" fill="#d0e8ff" stroke="#333" stroke-width="1"/>
+            <rect x="22" y="36" width="8" height="10" rx="2" fill="#d0e8ff" stroke="#333" stroke-width="1"/>
+            <circle cx="14" cy="62" r="6" fill="#333"/>
+            <circle cx="14" cy="62" r="3" fill="#888"/>
+            <circle cx="34" cy="62" r="6" fill="#333"/>
+            <circle cx="34" cy="62" r="3" fill="#888"/>
+            <!-- head in window -->
+            <circle cx="27" cy="32" r="9" fill="#f5e6c8" stroke="#333" stroke-width="1.2"/>
+            <circle cx="24" cy="30" r="2" fill="#333"/>
+            <circle cx="30" cy="30" r="2" fill="#333"/>
+            <path d="M24 36 Q27 39 30 36" stroke="#555" stroke-width="1" fill="none"/>
+            <path d="M18 24 Q27 18 36 24" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+            <!-- waving arm -->
+            <line x1="36" y1="30" x2="44" y2="22" stroke="#f5e6c8" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="45" cy="20" rx="4" ry="5" fill="#f5e6c8" stroke="#333" stroke-width="1" transform="rotate(-20 45 20)"/>
+          </svg>
+          <div style="font-size:9px;color:#888">Bob</div>
+        </div>
+        <div style="font-size:24px;margin-bottom:20px">👋</div>
+        <!-- provider waving -->
+        <div style="text-align:center">
+          <svg width="44" height="60" viewBox="0 0 44 70">
+            <!-- body -->
+            <rect x="10" y="38" width="24" height="28" rx="6" fill="#e84393" stroke="#333" stroke-width="1.5"/>
+            <!-- head -->
+            <circle cx="22" cy="28" r="16" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="17" cy="26" rx="3" ry="4" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="17" cy="27" r="1.5" fill="#333"/>
+            <ellipse cx="27" cy="26" rx="3" ry="4" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="27" cy="27" r="1.5" fill="#333"/>
+            <path d="M17 34 Q22 38 27 34" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="13" rx="15" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="34" cy="12" r="6" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <!-- waving arm -->
+            <line x1="10" y1="46" x2="2" y2="36" stroke="#f5d5c8" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="1" cy="33" rx="4" ry="5" fill="#f5d5c8" stroke="#333" stroke-width="1" transform="rotate(20 1 33)"/>
+          </svg>
+          <div style="font-size:9px;color:#888">Sam</div>
+        </div>
+      </div>
+      <div style="text-align:center;background:#fff8ee;border:1.5px solid #fac775;border-radius:8px;padding:8px;font-size:11px;font-weight:800;color:#7a4a0a;margin-top:4px">
+        Montage neighbors helping neighbors 🏘️
+      </div>
+    </div>
+
+  </div><!-- /provider panels -->
+
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>If there are days left in the original window after the session, your space automatically goes back to "Available" for those days — no need to re-enter anything!</span>
+  </div>
+
+</div><!-- /section release -->
+
+
+<div class="spacer"></div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+  <div style="font-size:28px;margin-bottom:8px">🚗</div>
+  <div style="font-weight:800;font-size:14px;color:#555;margin-bottom:4px">ParkMontage</div>
+  <div>Keeping Montage neighbors parking-happy since 2026</div>
+  <div style="margin-top:12px"><a href="https://muralidb24.github.io/parkmontage">← Back to the app</a></div>
+</div>
+
+</body>
+</html>
