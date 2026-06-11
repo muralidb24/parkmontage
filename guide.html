@@ -167,6 +167,144 @@ body{font-family:'Nunito',system-ui,sans-serif;background:#f0f0ed;color:#111;min
 ════════════════════════════════════════ -->
 <div class="section" id="publish">
 
+  <div class="story-header provider">
+    <h2>🏠 Part 1 — Publishing your space</h2>
+    <p>You know you won't need your spot for a few weeks. Here's how to put it on the map.</p>
+  </div>
+  <div class="panels">
+
+    <!-- Panel 1: Open My Spaces -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>Open My Spaces</h3>
+      <div class="subtitle">Tap "My spaces" at the bottom of the app</div>
+      <div class="character">
+        <div class="char-face">
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">I'm away for 3 weeks — might as well share my spot! 🏖</div>
+      </div>
+      <div class="screen">
+        <div class="screen-inner">
+          <div style="font-size:10px;font-weight:800;color:#111;margin-bottom:6px">My spaces</div>
+          <div class="toggle-row" style="margin-top:0;font-size:10px">
+            <span>Left space</span>
+            <div class="toggle off"></div>
+          </div>
+          <div class="toggle-row" style="font-size:10px">
+            <span>Right space</span>
+            <div class="toggle off"></div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-btn">Find</div>
+            <div class="tab-btn">Sessions</div>
+            <div class="tab-btn active b">Spaces</div>
+            <div class="tab-btn">Acct</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Flip toggle -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Flip the toggle</h3>
+      <div class="subtitle">Tap the switch next to the space you want to share</div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-size:12px;font-weight:800">Left space</div>
+          <div style="font-size:10px;color:#888">Not shared → flip to share</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div style="margin-top:10px;text-align:center">
+        <div style="font-size:22px">👆</div>
+        <div style="font-size:10px;color:#888;margin-top:2px">A date picker will appear</div>
+      </div>
+      <div class="character" style="margin-top:8px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
+            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble out">Here we go! 🎉</div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Set dates -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>Set your dates</h3>
+      <div class="subtitle">Choose the window when your space is available</div>
+      <div style="background:#f0faf6;border:1.5px solid #9fe1cb;border-radius:10px;padding:12px;margin-top:6px">
+        <div style="font-size:10px;font-weight:800;color:#0a6e50;margin-bottom:8px">SET AVAILABILITY WINDOW</div>
+        <div class="date-row" style="margin-top:0">
+          <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 10</div></div>
+          <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 30</div></div>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:8px;text-align:center">6AM on Jun 10 · until 6PM on Jun 30</div>
+      </div>
+      <div class="action-btn blue" style="margin-top:8px;font-size:12px;padding:8px">✓ Save</div>
+    </div>
+
+    <!-- Panel 4: Space is live -->
+    <div class="panel" style="background:#e8f2fc;border-color:#b5d4f4">
+      <div class="panel-num" style="color:rgba(24,95,165,0.12)">4</div>
+      <h3 style="color:#0c447c">Your space is live! 🎉</h3>
+      <div class="subtitle" style="color:#185fa5">Neighbors searching those dates will find it</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My spaces</div>
+          <div style="background:#e1f5ee;border:1px solid #9fe1cb;border-radius:6px;padding:6px 8px">
+            <div style="font-size:9px;font-weight:800;color:#0a6e50">✓ Available</div>
+            <div style="font-size:8px;color:#888;margin-top:2px">Left space · Jun 10–30</div>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:5px">
+            <div style="background:#e6f1fb;color:#185fa5;font-size:7px;font-weight:700;padding:3px 5px;border-radius:5px">📅 Edit dates</div>
+            <div style="background:#f0f0ed;color:#666;font-size:7px;font-weight:700;padding:3px 5px;border-radius:5px">Toggle off to unshare</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;background:#e6f1fb;border-radius:8px;padding:8px;font-size:11px;color:#185fa5;text-align:center;font-weight:700">
+        Now just sit back and wait for requests 🏖
+      </div>
+    </div>
+
+  </div><!-- /publish panels -->
+
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>Changed your mind? Just flip the toggle back off at any time — as long as no one has been approved yet.</span>
+  </div>
+
+</div><!-- /section publish -->
+
+
+<div class="spacer"></div>
+<div class="versus">— meanwhile, a neighbor needs a spot —</div>
+
+
+<!-- ══════════════════════════════════════
+     SECTION 2: FINDING & REQUESTING
+════════════════════════════════════════ -->
+<div class="section" id="find">
+
   <!-- Renter story -->
   <div class="story-header renter">
     <h2>🚗 You need a parking spot</h2>
@@ -348,144 +486,6 @@ body{font-family:'Nunito',system-ui,sans-serif;background:#f0f0ed;color:#111;min
   <div class="tip">
     <span class="tip-icon">💡</span>
     <span>You can request multiple spaces in one go — handy if you're not sure who'll approve first. The first approval wins!</span>
-  </div>
-
-</div><!-- /section publish -->
-
-
-<div class="spacer"></div>
-<div class="versus">— meanwhile, a neighbor needs a spot —</div>
-
-
-<!-- ══════════════════════════════════════
-     SECTION 2: FINDING & REQUESTING
-════════════════════════════════════════ -->
-<div class="section" id="find">
-
-  <div class="story-header provider">
-    <h2>🏠 Part 1 — Publishing your space</h2>
-    <p>You know you won't need your spot for a few weeks. Here's how to put it on the map.</p>
-  </div>
-  <div class="panels">
-
-    <!-- Panel 1: Open My Spaces -->
-    <div class="panel">
-      <div class="panel-num">1</div>
-      <h3>Open My Spaces</h3>
-      <div class="subtitle">Tap "My spaces" at the bottom of the app</div>
-      <div class="character">
-        <div class="char-face">
-          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
-            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="16" cy="21" r="2" fill="#333"/>
-            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="28" cy="21" r="2" fill="#333"/>
-            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
-            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
-            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
-          </svg>
-        </div>
-        <div class="bubble out">I'm away for 3 weeks — might as well share my spot! 🏖</div>
-      </div>
-      <div class="screen">
-        <div class="screen-inner">
-          <div style="font-size:10px;font-weight:800;color:#111;margin-bottom:6px">My spaces</div>
-          <div class="toggle-row" style="margin-top:0;font-size:10px">
-            <span>Left space</span>
-            <div class="toggle off"></div>
-          </div>
-          <div class="toggle-row" style="font-size:10px">
-            <span>Right space</span>
-            <div class="toggle off"></div>
-          </div>
-          <div class="tab-bar">
-            <div class="tab-btn">Find</div>
-            <div class="tab-btn">Sessions</div>
-            <div class="tab-btn active b">Spaces</div>
-            <div class="tab-btn">Acct</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel 2: Flip toggle -->
-    <div class="panel">
-      <div class="panel-num">2</div>
-      <h3>Flip the toggle</h3>
-      <div class="subtitle">Tap the switch next to the space you want to share</div>
-      <div class="toggle-row">
-        <div>
-          <div style="font-size:12px;font-weight:800">Left space</div>
-          <div style="font-size:10px;color:#888">Not shared → flip to share</div>
-        </div>
-        <div class="toggle on"></div>
-      </div>
-      <div style="margin-top:10px;text-align:center">
-        <div style="font-size:22px">👆</div>
-        <div style="font-size:10px;color:#888;margin-top:2px">A date picker will appear</div>
-      </div>
-      <div class="character" style="margin-top:8px">
-        <div class="char-face">
-          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#f5d5c8" stroke="#333" stroke-width="1.5"/>
-            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="16" cy="21" r="2" fill="#333"/>
-            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="28" cy="21" r="2" fill="#333"/>
-            <path d="M14 28 Q22 33 30 28" stroke="#555" stroke-width="1.2" fill="none"/>
-            <ellipse cx="22" cy="5" rx="19" ry="10" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
-            <circle cx="38" cy="7" r="7" fill="#c66a00" stroke="#c66a00" stroke-width="1"/>
-          </svg>
-        </div>
-        <div class="bubble out">Here we go! 🎉</div>
-      </div>
-    </div>
-
-    <!-- Panel 3: Set dates -->
-    <div class="panel">
-      <div class="panel-num">3</div>
-      <h3>Set your dates</h3>
-      <div class="subtitle">Choose the window when your space is available</div>
-      <div style="background:#f0faf6;border:1.5px solid #9fe1cb;border-radius:10px;padding:12px;margin-top:6px">
-        <div style="font-size:10px;font-weight:800;color:#0a6e50;margin-bottom:8px">SET AVAILABILITY WINDOW</div>
-        <div class="date-row" style="margin-top:0">
-          <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 10</div></div>
-          <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 30</div></div>
-        </div>
-        <div style="font-size:10px;color:#888;margin-top:8px;text-align:center">6AM on Jun 10 · until 6PM on Jun 30</div>
-      </div>
-      <div class="action-btn blue" style="margin-top:8px;font-size:12px;padding:8px">✓ Save</div>
-    </div>
-
-    <!-- Panel 4: Space is live -->
-    <div class="panel" style="background:#e8f2fc;border-color:#b5d4f4">
-      <div class="panel-num" style="color:rgba(24,95,165,0.12)">4</div>
-      <h3 style="color:#0c447c">Your space is live! 🎉</h3>
-      <div class="subtitle" style="color:#185fa5">Neighbors searching those dates will find it</div>
-      <div class="screen" style="max-width:100%">
-        <div class="screen-inner">
-          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My spaces</div>
-          <div style="background:#e1f5ee;border:1px solid #9fe1cb;border-radius:6px;padding:6px 8px">
-            <div style="font-size:9px;font-weight:800;color:#0a6e50">✓ Available</div>
-            <div style="font-size:8px;color:#888;margin-top:2px">Left space · Jun 10–30</div>
-          </div>
-          <div style="display:flex;gap:4px;margin-top:5px">
-            <div style="background:#e6f1fb;color:#185fa5;font-size:7px;font-weight:700;padding:3px 5px;border-radius:5px">📅 Edit dates</div>
-            <div style="background:#f0f0ed;color:#666;font-size:7px;font-weight:700;padding:3px 5px;border-radius:5px">Toggle off to unshare</div>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:10px;background:#e6f1fb;border-radius:8px;padding:8px;font-size:11px;color:#185fa5;text-align:center;font-weight:700">
-        Now just sit back and wait for requests 🏖
-      </div>
-    </div>
-
-  </div><!-- /publish panels -->
-
-  <div class="tip">
-    <span class="tip-icon">💡</span>
-    <span>Changed your mind? Just flip the toggle back off at any time — as long as no one has been approved yet.</span>
   </div>
 
 </div><!-- /section find -->
