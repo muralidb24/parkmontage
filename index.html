@@ -1280,20 +1280,15 @@ function AccountTab({ myHome, user, showToast }) {
     ),
 
     // How it works
-    h('a',{
-      href:'guide.html',
-      style:{display:'block',textDecoration:'none',marginBottom:10}
-    },
-      h('div',{className:'card',style:{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}},
-        h('div',{style:{width:40,height:40,borderRadius:10,background:'#e1f5ee',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
-          h('i',{className:'ti ti-book-2',style:{fontSize:22,color:'#1a9e75'}})
-        ),
-        h('div',{style:{flex:1}},
-          h('div',{className:'card-title'},'How it works'),
-          h('div',{className:'card-sub'},'Step-by-step guide to using ParkMontage')
-        ),
-        h('i',{className:'ti ti-arrow-right',style:{fontSize:18,color:'#ccc'}})
-      )
+    h('div',{className:'card',style:{display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginBottom:10},onClick:()=>window.location.href='guide.html'},
+      h('div',{style:{width:40,height:40,borderRadius:10,background:'#e1f5ee',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
+        h('i',{className:'ti ti-info-circle',style:{fontSize:22,color:'#1a9e75'}})
+      ),
+      h('div',{style:{flex:1}},
+        h('div',{className:'card-title'},'How it works'),
+        h('div',{className:'card-sub'},'Step-by-step guide to using ParkMontage')
+      ),
+      h('span',{style:{fontSize:20,color:'#ccc',lineHeight:1}},'›')
     ),
 
     // Feedback form
