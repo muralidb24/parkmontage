@@ -452,32 +452,46 @@ async function sendEmail({ to, subject, html }) {
 function FindSpaceTab({ myHome, showToast }) {
   const [fromDate, setFrom] = useState('');
   const [toDate, setTo] = useState('');
-
-  const updateFrom = (val) => { 
-    setFrom(val); 
-    setResults(null);
-    // If to date is now earlier than from date, clear it
-    if (toDate && toDate < val) setTo('');
-  };
-  const updateTo = (val) => { setTo(val); setResults(null); };
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [reqMsg, setReqMsg] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Modal date state — used only in browse mode (no upfront dates)
+  const [modalFrom, setModalFrom] = useState('');
+  const [modalTo, setModalTo] = useState('');
+
+  const browseMode = !fromDate && !toDate; // true when user hasn't entered dates
+
+  const updateFrom = (val) => {
+    setFrom(val);
+    setResults(null);
+    setSelected({});
+    if (toDate && toDate < val) setTo('');
+  };
+  const updateTo = (val) => { setTo(val); setResults(null); setSelected({}); };
+
+  const clearFrom = () => { setFrom(''); setTo(''); setResults(null); setSelected({}); };
+  const clearTo   = () => { setTo(''); setResults(null); setSelected({}); };
 
   const search = async () => {
-    if (!fromDate || !toDate) { showToast('Please select both dates.'); return; }
-    if (toDate < fromDate) { showToast('To date cannot be earlier than From date.'); return; }
+    if (fromDate && toDate && toDate < fromDate) {
+      showToast('To date cannot be earlier than From date.'); return;
+    }
     setLoading(true);
+    setSelected({});
     try {
-      // Fetch available spaces covering requested dates via direct REST
-      const data = await dbFetch(
-        'spaces?select=*,homes(*)&state=eq.available&home_id=neq.' + myHome.id +
-        '&from_date=lte.' + fromDate + '&to_date=gte.' + toDate
-      );
-      // Filter out spaces already requested
+      // With dates: filter to spaces covering the requested range.
+      // Without dates: return all available spaces, ordered by from_date.
+      let url = 'spaces?select=*,homes(*)&state=eq.available&home_id=neq.' + myHome.id;
+      if (fromDate && toDate) {
+        url += '&from_date=lte.' + fromDate + '&to_date=gte.' + toDate;
+      } else {
+        url += '&order=from_date.asc';
+      }
+      const data = await dbFetch(url);
+      // Filter out spaces the user already has an active session for
       const mySessions = await dbFetch(
         'sessions?select=space_id&renter_home_id=eq.' + myHome.id +
         '&status=in.("pending","approved","inuse")'
@@ -491,37 +505,69 @@ function FindSpaceTab({ myHome, showToast }) {
     setLoading(false);
   };
 
+  const openModal = () => {
+    // Pre-fill modal dates from search bar when available
+    setModalFrom(fromDate);
+    setModalTo(toDate);
+    setShowModal(true);
+  };
+
+  // Validate that modal dates fall within every selected space's window
+  const modalDatesValid = () => {
+    if (!modalFrom || !modalTo) return false;
+    if (modalTo < modalFrom) return false;
+    const selectedSpaces = results ? results.filter(sp => selected[sp.id]) : [];
+    return selectedSpaces.every(sp => modalFrom >= sp.from_date && modalTo <= sp.to_date);
+  };
+
+  // Human-readable window hint for selected spaces in browse mode
+  const windowHint = () => {
+    if (!results) return '';
+    const selectedSpaces = results.filter(sp => selected[sp.id]);
+    if (selectedSpaces.length === 0) return '';
+    // Find intersection of all selected windows
+    const maxFrom = selectedSpaces.reduce((m, sp) => sp.from_date > m ? sp.from_date : m, selectedSpaces[0].from_date);
+    const minTo   = selectedSpaces.reduce((m, sp) => sp.to_date   < m ? sp.to_date   : m, selectedSpaces[0].to_date);
+    if (maxFrom > minTo) return 'No overlapping dates across selected spaces.';
+    return fmt(maxFrom) + ' – ' + fmt(minTo);
+  };
+
   const sendRequests = async () => {
     const selectedSpaces = results.filter(sp => selected[sp.id]);
     if (selectedSpaces.length === 0) return;
+    // In browse mode dates come from the modal; in exact mode from the search bar
+    const reqFrom = browseMode ? modalFrom : fromDate;
+    const reqTo   = browseMode ? modalTo   : toDate;
+    if (!reqFrom || !reqTo) { showToast('Please select dates for your request.'); return; }
+    if (reqTo < reqFrom)    { showToast('To date cannot be earlier than From date.'); return; }
     setSubmitting(true);
 
-    // Group by provider so we send one email per provider
+    // Group by provider for one email per provider
     const byProvider = {};
     for (const sp of selectedSpaces) {
       if (!byProvider[sp.home_id]) byProvider[sp.home_id] = [];
       byProvider[sp.home_id].push(sp);
     }
 
-    // Create a session and message for each selected space
+    // Create a session + opening message for each selected space
     for (const sp of selectedSpaces) {
       const { data: sess, error: sErr } = await db.from('sessions').insert({
         space_id: sp.id,
         renter_home_id: myHome.id,
         provider_home_id: sp.home_id,
-        from_date: fromDate,
-        to_date: toDate,
+        from_date: reqFrom,
+        to_date: reqTo,
         status: 'pending',
       }).select().single();
       if (sErr) { console.error('Session insert error:', sErr); continue; }
       await db.from('messages').insert({
         session_id: sess.id,
         sender_home_id: myHome.id,
-        body: reqMsg || 'Hi! I would like to use your ' + sp.side + ' parking space from ' + fmt(fromDate) + ' to ' + fmt(toDate) + '.',
+        body: reqMsg || 'Hi! I would like to use your ' + sp.side + ' parking space from ' + fmt(reqFrom) + ' to ' + fmt(reqTo) + '.',
       });
     }
 
-    // Send one email per provider listing all their requested spaces
+    // Send one email per provider
     for (const [homeId, spaces] of Object.entries(byProvider)) {
       const { data: provider } = await db
         .from('homes').select('owner_name, owner_email').eq('id', homeId).single();
@@ -532,7 +578,7 @@ function FindSpaceTab({ myHome, showToast }) {
           subject: 'New parking space request',
           html: '<p>Hi ' + provider.owner_name + ',</p>' +
             '<p><strong>' + myHome.owner_name + '</strong> at ' + shortAddress(myHome.address) + ' has requested your <strong>' + spaceList + '</strong>.</p>' +
-            '<p><strong>Dates:</strong> ' + fmt(fromDate) + ' - ' + fmt(toDate) + '</p>' +
+            '<p><strong>Dates:</strong> ' + fmt(reqFrom) + ' - ' + fmt(reqTo) + '</p>' +
             '<p>' + (reqMsg || '') + '</p>' +
             '<p>Please open the ParkMontage app to approve or decline.</p>' +
             '<p>- ParkMontage</p>'
@@ -544,39 +590,65 @@ function FindSpaceTab({ myHome, showToast }) {
     setShowModal(false);
     setSelected({});
     setReqMsg('');
+    setModalFrom('');
+    setModalTo('');
     setResults(null);
     const count = selectedSpaces.length;
     showToast(count + ' request' + (count > 1 ? 's' : '') + ' sent!');
   };
 
+  const selectedCount = results ? Object.values(selected).filter(Boolean).length : 0;
+
   return h('div',null,
+
+    // ── Search card ──
     h('div',{className:'card',style:{marginBottom:14}},
       h('div',{className:'row2'},
+        // From date
         h('div',{className:'input-group',style:{marginBottom:0}},
-          h('label',null,'From date'),
+          h('label',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+            'From date',
+            fromDate && h('button',{
+              style:{fontSize:11,color:'#aaa',background:'none',border:'none',cursor:'pointer',padding:'0 2px',display:'flex',alignItems:'center',gap:2}
+              ,onClick:clearFrom
+            }, h('i',{className:'ti ti-x',style:{fontSize:11}}), ' Clear')
+          ),
           h('input',{type:'date',value:fromDate,min:todayStr(),onChange:e=>updateFrom(e.target.value)})
         ),
+        // To date
         h('div',{className:'input-group',style:{marginBottom:0}},
-          h('label',null,'To date'),
+          h('label',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+            'To date',
+            toDate && h('button',{
+              style:{fontSize:11,color:'#aaa',background:'none',border:'none',cursor:'pointer',padding:'0 2px',display:'flex',alignItems:'center',gap:2}
+              ,onClick:clearTo
+            }, h('i',{className:'ti ti-x',style:{fontSize:11}}), ' Clear')
+          ),
           h('input',{type:'date',value:toDate,min:fromDate||todayStr(),onChange:e=>updateTo(e.target.value),disabled:!fromDate})
         )
       ),
       h('div',{style:{marginTop:12}},
-        h('button',{className:'btn btn-primary btn-block',onClick:search,disabled:loading||!fromDate||!toDate},
+        h('button',{className:'btn btn-primary btn-block',onClick:search,disabled:loading},
           loading ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-search'}),
           loading ? 'Searching...' : 'Find available spaces'
         )
       )
     ),
 
+    // ── Results ──
     results === null ? null :
     results.length === 0 ?
     h('div',{className:'empty-state'},
       h('i',{className:'ti ti-parking-off'}),
-      h('p',null,'No spaces available for these dates.\nCheck back later or try different dates.')
+      h('p',null, fromDate && toDate
+        ? 'No spaces available for these dates.\nCheck back later or try different dates.'
+        : 'No spaces are available right now.\nCheck back later!')
     ) :
     h('div',null,
-      h('div',{className:'section-label'},`${results.length} space${results.length!==1?'s':''} available`),
+      h('div',{className:'section-label'},
+        `${results.length} space${results.length!==1?'s':''} available` +
+        (fromDate && toDate ? ' \u00b7 ' + fmt(fromDate) + '\u2013' + fmt(toDate) : '')
+      ),
       results.map(sp => {
         const isChecked = !!selected[sp.id];
         const addr = shortAddress(sp.homes.address);
@@ -600,35 +672,72 @@ function FindSpaceTab({ myHome, showToast }) {
                 h('span',{style:{fontSize:14,fontWeight:600,color:'#111'}},addr),
                 h('span',{className:'spot-badge'},sp.side)
               ),
-              h('div',{style:{fontSize:11,color:'#aaa',marginTop:1}},sp.homes.owner_name)
+              h('div',{style:{fontSize:11,color:'#aaa',marginTop:1}},sp.homes.owner_name),
+              // Show space's own dates only in browse mode
+              browseMode && h('div',{style:{fontSize:11,color:'#1a9e75',fontWeight:500,marginTop:3,display:'flex',alignItems:'center',gap:3}},
+                h('i',{className:'ti ti-calendar',style:{fontSize:12}}),
+                fmt(sp.from_date) + ' \u2013 ' + fmt(sp.to_date)
+              )
             )
           )
         );
       }),
-      Object.values(selected).some(Boolean) && h('div',{style:{
+
+      // Floating request button
+      selectedCount > 0 && h('div',{style:{
         position:'fixed',bottom:72,left:'50%',transform:'translateX(-50%)',
         width:358,zIndex:150,padding:'0 16px'
       }},
         h('button',{
           className:'btn btn-primary btn-block',
           style:{boxShadow:'0 4px 16px rgba(26,158,117,0.35)',borderRadius:14,padding:'13px'},
-          onClick:()=>setShowModal(true)
+          onClick:openModal
         },
           h('i',{className:'ti ti-send'}),
-          `Request ${Object.values(selected).filter(Boolean).length} space${Object.values(selected).filter(Boolean).length>1?'s':''}`
+          `Request ${selectedCount} space${selectedCount>1?'s':''}`
         )
       )
     ),
 
+    // ── Request modal ──
     showModal && h('div',{className:'modal-overlay',onClick:e=>{if(e.target===e.currentTarget)setShowModal(false)}},
       h('div',{className:'modal'},
         h('div',{className:'modal-handle'}),
         h('h2',{style:{fontSize:17,fontWeight:600,marginBottom:3}},
-          'Request ' + Object.values(selected).filter(Boolean).length + ' parking space' + (Object.values(selected).filter(Boolean).length > 1 ? 's' : '')
+          'Request ' + selectedCount + ' parking space' + (selectedCount > 1 ? 's' : '')
         ),
-        h('p',{style:{fontSize:13,color:'#888',marginBottom:14}},
-          fmt(fromDate) + ' - ' + fmt(toDate) + ' · 6AM start to 6PM end'
-        ),
+
+        // In browse mode: collect dates here; in exact mode: just show them
+        browseMode
+          ? h('div',null,
+              h('div',{className:'banner banner-green',style:{marginBottom:12}},
+                h('i',{className:'ti ti-calendar'}),
+                h('p',null,'What dates do you need? Must fall within the space\'s availability window.')
+              ),
+              h('div',{className:'row2',style:{marginBottom:4}},
+                h('div',{className:'input-group',style:{marginBottom:0}},
+                  h('label',null,'From date'),
+                  h('input',{type:'date',value:modalFrom,min:todayStr(),
+                    onChange:e=>{ setModalFrom(e.target.value); if(modalTo && modalTo < e.target.value) setModalTo(''); }})
+                ),
+                h('div',{className:'input-group',style:{marginBottom:0}},
+                  h('label',null,'To date'),
+                  h('input',{type:'date',value:modalTo,min:modalFrom||todayStr(),disabled:!modalFrom,
+                    onChange:e=>setModalTo(e.target.value)})
+                )
+              ),
+              // Window hint — shows valid overlap range
+              modalFrom && modalTo && h('div',{style:{fontSize:11,color: modalDatesValid() ? '#0a6e50' : '#a32d2d',marginBottom:12,marginTop:6,display:'flex',alignItems:'center',gap:4}},
+                h('i',{className: modalDatesValid() ? 'ti ti-circle-check' : 'ti ti-alert-circle',style:{fontSize:13}}),
+                modalDatesValid()
+                  ? 'Dates confirmed \u00b7 available window: ' + windowHint()
+                  : 'Dates fall outside the space\'s availability window'
+              )
+            )
+          : h('p',{style:{fontSize:13,color:'#888',marginBottom:14}},
+              fmt(fromDate) + ' \u2013 ' + fmt(toDate) + ' \u00b7 6AM start to 6PM end'
+            ),
+
         h('div',{className:'input-group'},
           h('label',null,'Message to owner(s)'),
           h('textarea',{rows:4,placeholder:"Hi! I'd love to use your space for the requested dates...",
@@ -640,7 +749,11 @@ function FindSpaceTab({ myHome, showToast }) {
         ),
         h('div',{style:{display:'flex',gap:8}},
           h('button',{className:'btn',style:{flex:1,justifyContent:'center'},onClick:()=>setShowModal(false)},'Cancel'),
-          h('button',{className:'btn btn-primary',style:{flex:1,justifyContent:'center'},onClick:sendRequests,disabled:submitting},
+          h('button',{
+            className:'btn btn-primary',style:{flex:1,justifyContent:'center'},
+            onClick:sendRequests,
+            disabled:submitting || (browseMode && !modalDatesValid())
+          },
             submitting ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-send'}),
             submitting ? 'Sending...' : 'Send request'
           )
@@ -1279,18 +1392,6 @@ function AccountTab({ myHome, user, showToast }) {
       )
     ),
 
-    // How it works
-    h('div',{className:'card',style:{display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginBottom:10},onClick:()=>window.location.href='guide.html'},
-      h('div',{style:{width:40,height:40,borderRadius:10,background:'#e1f5ee',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
-        h('i',{className:'ti ti-info-circle',style:{fontSize:22,color:'#1a9e75'}})
-      ),
-      h('div',{style:{flex:1}},
-        h('div',{className:'card-title'},'How it works'),
-        h('div',{className:'card-sub'},'Step-by-step guide to using ParkMontage')
-      ),
-      h('span',{style:{fontSize:20,color:'#ccc',lineHeight:1}},'›')
-    ),
-
     // Feedback form
     h('div',{className:'card',style:{marginBottom:10}},
       h('div',{className:'card-title',style:{marginBottom:12}},'Send us a message'),
@@ -1326,6 +1427,17 @@ function AccountTab({ myHome, user, showToast }) {
             submitting ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-send'}),
             submitting ? 'Sending...' : 'Send message'
           )
+    ),
+
+    // How it works guide
+    h('div',{className:'card'},
+      h('a',{
+        href:'https://muralidb24.github.io/parkmontage/guide',
+        target:'_blank',
+        rel:'noopener noreferrer',
+        className:'btn btn-block',
+        style:{textDecoration:'none',justifyContent:'center'}
+      },h('i',{className:'ti ti-book-2'}),'How it works — user guide')
     ),
 
     // Sign out
