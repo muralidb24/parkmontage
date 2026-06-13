@@ -155,15 +155,210 @@ body{font-family:'Nunito',system-ui,sans-serif;background:#f0f0ed;color:#111;min
 
 <!-- ── TOC ── -->
 <nav class="toc" aria-label="Jump to section">
-  <a class="toc-item provider" href="#publish">🅿 Publishing your space</a>
   <a class="toc-item renter" href="#find">🔍 Finding a space</a>
+  <a class="toc-item provider" href="#publish">🅿 Publishing your space</a>
   <a class="toc-item provider" href="#approve">✅ Approving a request</a>
   <a class="toc-item release" href="#release">🔑 Releasing a space</a>
 </nav>
 
 
 <!-- ══════════════════════════════════════
-     SECTION 1: PUBLISHING A SPACE
+     SECTION 1: FINDING & REQUESTING
+════════════════════════════════════════ -->
+<div class="section" id="find">
+
+  <!-- Renter story -->
+  <div class="story-header renter">
+    <h2>🚗 You need a parking spot</h2>
+    <p>Know your dates? Enter them. Flexible? Just browse — the app shows everything available.</p>
+  </div>
+  <div class="panels">
+
+    <!-- Panel 1 -->
+    <div class="panel">
+      <div class="panel-num">1</div>
+      <h3>Open Find Space</h3>
+      <div class="subtitle">Tap "Find space" in the bottom bar</div>
+      <div class="character">
+        <div class="char-face">
+          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2" fill="#333"/>
+            <path d="M16 30 Q22 27 28 30" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="bubble">My guests need parking — let me find a spot!</div>
+      </div>
+      <div class="screen">
+        <div class="screen-inner">
+          <div style="font-size:10px;font-weight:800;color:#111;margin-bottom:6px">Find a space</div>
+          <div style="background:#f0f0ed;border-radius:5px;padding:5px 6px;font-size:9px;color:#888;margin-bottom:4px">From date</div>
+          <div style="background:#f0f0ed;border-radius:5px;padding:5px 6px;font-size:9px;color:#888;margin-bottom:6px">To date</div>
+          <div style="background:#1a9e75;border-radius:5px;padding:5px 6px;font-size:9px;color:#fff;font-weight:700;text-align:center;margin-bottom:4px">🔍 Find available spaces</div>
+          <div style="font-size:8px;color:#aaa;text-align:center">No specific dates? Tap to browse all.</div>
+          <div class="tab-bar">
+            <div class="tab-btn active g">Find</div>
+            <div class="tab-btn">Sessions</div>
+            <div class="tab-btn">Spaces</div>
+            <div class="tab-btn">Acct</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 2 — two paths -->
+    <div class="panel">
+      <div class="panel-num">2</div>
+      <h3>Dates or no dates — your choice!</h3>
+      <div class="subtitle">Two ways to search</div>
+      <!-- Path A -->
+      <div style="background:#f0faf6;border:1.5px solid #9fe1cb;border-radius:8px;padding:8px 10px;margin-top:6px">
+        <div style="font-size:10px;font-weight:800;color:#0a6e50;margin-bottom:5px">📅 KNOW YOUR DATES?</div>
+        <div class="date-row" style="margin-top:0">
+          <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 15</div></div>
+          <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 22</div></div>
+        </div>
+        <div style="font-size:9px;color:#1a9e75;margin-top:5px">→ Shows only spaces covering those days</div>
+      </div>
+      <!-- Divider -->
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:700;margin:8px 0">— or —</div>
+      <!-- Path B -->
+      <div style="background:#f5f5f2;border:1.5px solid #ddd;border-radius:8px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:800;color:#555;margin-bottom:5px">🗓 FLEXIBLE DATES?</div>
+        <div style="display:flex;gap:5px">
+          <div style="flex:1;background:#fff;border:1px solid #ddd;border-radius:5px;padding:4px 6px;font-size:9px;color:#bbb">From date</div>
+          <div style="flex:1;background:#fff;border:1px solid #ddd;border-radius:5px;padding:4px 6px;font-size:9px;color:#bbb">To date</div>
+        </div>
+        <div style="font-size:9px;color:#888;margin-top:5px">→ Skip dates, tap Search to browse all</div>
+      </div>
+    </div>
+
+    <!-- Panel 3 -->
+    <div class="panel">
+      <div class="panel-num">3</div>
+      <h3>See what's available</h3>
+      <div class="subtitle">In browse mode each card shows the space's own dates</div>
+      <div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:8px;background:#f0faf6;border:1.5px solid #1a9e75;border-radius:8px;padding:7px 9px">
+          <div class="checkbox checked">✓</div>
+          <div>
+            <div style="font-size:11px;font-weight:800">12 Oak Lane</div>
+            <div style="font-size:10px;color:#888">Sam · Left spot</div>
+            <div style="font-size:10px;color:#1a9e75;font-weight:600;margin-top:2px">📅 Jun 10 – Jun 30</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:7px 9px">
+          <div class="checkbox empty"></div>
+          <div>
+            <div style="font-size:11px;font-weight:800">8 Maple Rd</div>
+            <div style="font-size:10px;color:#888">Linda · Right spot</div>
+            <div style="font-size:10px;color:#1a9e75;font-weight:600;margin-top:2px">📅 Jun 14 – Jun 28</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:7px 9px">
+          <div class="checkbox empty"></div>
+          <div>
+            <div style="font-size:11px;font-weight:800">5 Birch Close</div>
+            <div style="font-size:10px;color:#888">Dave · Left spot</div>
+            <div style="font-size:10px;color:#1a9e75;font-weight:600;margin-top:2px">📅 Jun 18 – Jul 5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 4 -->
+    <div class="panel">
+      <div class="panel-num">4</div>
+      <h3>Pick your dates &amp; send a note</h3>
+      <div class="subtitle">In browse mode, the request form asks for your dates</div>
+      <!-- Modal date picker mini -->
+      <div style="background:#f0faf6;border:1.5px solid #9fe1cb;border-radius:8px;padding:8px 10px;margin-top:6px">
+        <div style="font-size:9px;font-weight:800;color:#0a6e50;margin-bottom:5px">📅 WHAT DATES DO YOU NEED?</div>
+        <div class="date-row" style="margin-top:0">
+          <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 20</div></div>
+          <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 23</div></div>
+        </div>
+        <div style="font-size:9px;color:#0a6e50;margin-top:5px">✓ Within Sam's window: Jun 10–30</div>
+      </div>
+      <div class="msg-box" style="margin-top:8px">
+        <div class="lbl">MESSAGE TO OWNER</div>
+        Hi! My parents are visiting and need a spot. Really appreciate it! 🙏
+      </div>
+      <div class="action-btn green" style="margin-top:8px;font-size:12px;padding:8px">✉ Send request</div>
+    </div>
+
+    <!-- Panel 5 -->
+    <div class="panel">
+      <div class="panel-num">5</div>
+      <h3>Now… you wait</h3>
+      <div class="subtitle">Your request shows as "Awaiting approval" in My Sessions</div>
+      <div class="screen" style="max-width:100%">
+        <div class="screen-inner">
+          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My Sessions</div>
+          <div class="screen-row pending">⏳ Awaiting approval</div>
+          <div style="font-size:9px;color:#888;padding:4px 4px 0">12 Oak Lane · Left spot<br>Jun 20 – Jun 23</div>
+        </div>
+      </div>
+      <div class="character" style="margin-top:10px">
+        <div class="char-face">
+          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
+            <ellipse cx="16" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="16" cy="21" r="2.5" fill="#333"/>
+            <ellipse cx="28" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
+            <circle cx="28" cy="21" r="2.5" fill="#333"/>
+            <path d="M16 30 Q22 27 28 30" stroke="#555" stroke-width="1.2" fill="none"/>
+            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
+            <text x="34" y="12" style="font:700 8px sans-serif;fill:#6af">z</text>
+            <text x="38" y="8" style="font:700 10px sans-serif;fill:#adf">z</text>
+          </svg>
+        </div>
+        <div class="bubble">Checking my phone every 5 mins… 😬</div>
+      </div>
+    </div>
+
+    <!-- Panel 6 -->
+    <div class="panel" style="background:#f0faf6;border-color:#9fe1cb">
+      <div class="panel-num" style="color:rgba(10,110,80,0.15)">6</div>
+      <h3 style="color:#0a6e50">You're approved! 🎉</h3>
+      <div class="subtitle" style="color:#1a9e75">You'll get an email notification right away</div>
+      <div class="notif">
+        <div class="notif-header">
+          <div class="notif-dot" style="background:#1a9e75"></div>
+          <span class="notif-app" style="color:#1a9e75">ParkMontage</span>
+          <span style="font-size:9px;color:#bbb;margin-left:auto">just now</span>
+        </div>
+        <div class="notif-body">🎉 Your request for the Left spot at <strong>12 Oak Lane</strong> is approved! Jun 20–23, 6AM–6PM.</div>
+      </div>
+      <div class="result-box success" style="margin-top:10px">
+        <span class="icon">
+          <span class="pulse" style="display:inline-block">✅</span>
+        </span>
+        <strong>Space confirmed!</strong>
+        <p>Available from 6AM on Jun 20<br>until 6PM on Jun 23</p>
+      </div>
+    </div>
+
+  </div><!-- /panels -->
+
+  <div class="tip">
+    <span class="tip-icon">💡</span>
+    <span>Flexible on dates? Skip the date fields and tap Search — you'll see all available spaces with their windows, and enter your exact dates when you request. You can also request multiple spaces at once — the first approval wins!</span>
+  </div>
+
+</div><!-- /section find -->
+
+
+<div class="spacer"></div>
+<div class="versus">— meanwhile, across the street —</div>
+
+
+<!-- ══════════════════════════════════════
+     SECTION 2: PUBLISHING A SPACE
 ════════════════════════════════════════ -->
 <div class="section" id="publish">
 
@@ -294,201 +489,6 @@ body{font-family:'Nunito',system-ui,sans-serif;background:#f0f0ed;color:#111;min
   </div>
 
 </div><!-- /section publish -->
-
-
-<div class="spacer"></div>
-<div class="versus">— meanwhile, a neighbor needs a spot —</div>
-
-
-<!-- ══════════════════════════════════════
-     SECTION 2: FINDING & REQUESTING
-════════════════════════════════════════ -->
-<div class="section" id="find">
-
-  <!-- Renter story -->
-  <div class="story-header renter">
-    <h2>🚗 You need a parking spot</h2>
-    <p>Your guests are coming. You need extra parking. Here's what to do.</p>
-  </div>
-  <div class="panels">
-
-    <!-- Panel 1 -->
-    <div class="panel">
-      <div class="panel-num">1</div>
-      <h3>Open Find Space</h3>
-      <div class="subtitle">Tap "Find space" in the bottom bar</div>
-      <div class="character">
-        <div class="char-face">
-          <!-- renter guy SVG face -->
-          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
-            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="16" cy="21" r="2" fill="#333"/>
-            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="28" cy="21" r="2" fill="#333"/>
-            <path d="M16 30 Q22 27 28 30" stroke="#555" stroke-width="1.2" fill="none"/>
-            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
-          </svg>
-        </div>
-        <div class="bubble">My guests arrive Friday — I need a spot!</div>
-      </div>
-      <div class="screen">
-        <div class="screen-inner">
-          <div style="font-size:10px;font-weight:800;color:#111;margin-bottom:6px">Find a space</div>
-          <div style="background:#f0f0ed;border-radius:5px;padding:5px 6px;font-size:9px;color:#888;margin-bottom:4px">From date</div>
-          <div style="background:#f0f0ed;border-radius:5px;padding:5px 6px;font-size:9px;color:#888;margin-bottom:6px">To date</div>
-          <div class="tab-bar">
-            <div class="tab-btn active g">Find</div>
-            <div class="tab-btn">Sessions</div>
-            <div class="tab-btn">Spaces</div>
-            <div class="tab-btn">Acct</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel 2 -->
-    <div class="panel">
-      <div class="panel-num">2</div>
-      <h3>Pick your dates</h3>
-      <div class="subtitle">Choose start and end dates, then tap Search</div>
-      <div class="character">
-        <div class="char-face">
-          <svg class="face" width="44" height="44" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
-            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="16" cy="21" r="2" fill="#333"/>
-            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="28" cy="21" r="2" fill="#333"/>
-            <path d="M16 29 Q22 34 28 29" stroke="#555" stroke-width="1.2" fill="none"/>
-            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
-          </svg>
-        </div>
-        <div class="bubble">Jun 15 to Jun 22 — perfect!</div>
-      </div>
-      <div class="date-row">
-        <div class="date-box"><div class="lbl">FROM</div><div class="val">Jun 15</div></div>
-        <div class="date-box"><div class="lbl">TO</div><div class="val">Jun 22</div></div>
-      </div>
-      <div class="action-btn green" style="margin-top:8px;font-size:12px;padding:8px">🔍 Find available spaces</div>
-    </div>
-
-    <!-- Panel 3 -->
-    <div class="panel">
-      <div class="panel-num">3</div>
-      <h3>Pick a space</h3>
-      <div class="subtitle">Tap a card to select it — you can pick more than one!</div>
-      <div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;align-items:center;gap:8px;background:#f0faf6;border:1.5px solid #1a9e75;border-radius:8px;padding:7px 9px">
-          <div class="checkbox checked">✓</div>
-          <div>
-            <div style="font-size:11px;font-weight:800">12 Oak Lane</div>
-            <div style="font-size:10px;color:#888">Sam · Left spot</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:7px 9px">
-          <div class="checkbox empty"></div>
-          <div>
-            <div style="font-size:11px;font-weight:800">8 Maple Rd</div>
-            <div style="font-size:10px;color:#888">Linda · Right spot</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #eee;border-radius:8px;padding:7px 9px">
-          <div class="checkbox empty"></div>
-          <div>
-            <div style="font-size:11px;font-weight:800">5 Birch Close</div>
-            <div style="font-size:10px;color:#888">Dave · Left spot</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel 4 -->
-    <div class="panel">
-      <div class="panel-num">4</div>
-      <h3>Send a friendly note</h3>
-      <div class="subtitle">Add a message, then tap Send request</div>
-      <div class="msg-box">
-        <div class="lbl">MESSAGE TO OWNER</div>
-        Hi! My parents are visiting and they need a spot for the week. Really appreciate it! 🙏
-      </div>
-      <div class="action-btn green" style="margin-top:8px;font-size:12px;padding:8px">✉ Send request</div>
-      <div class="character" style="margin-top:10px">
-        <div class="char-face">
-          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
-            <ellipse cx="16" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="16" cy="21" r="2" fill="#333"/>
-            <ellipse cx="28" cy="20" rx="4" ry="5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="28" cy="21" r="2" fill="#333"/>
-            <path d="M16 29 Q22 34 28 29" stroke="#555" stroke-width="1.2" fill="none"/>
-            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
-          </svg>
-        </div>
-        <div class="bubble">Fingers crossed! 🤞</div>
-      </div>
-    </div>
-
-    <!-- Panel 5 -->
-    <div class="panel">
-      <div class="panel-num">5</div>
-      <h3>Now… you wait</h3>
-      <div class="subtitle">Your request shows as "Awaiting approval" in My Sessions</div>
-      <div class="screen" style="max-width:100%">
-        <div class="screen-inner">
-          <div style="font-size:9px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">My Sessions</div>
-          <div class="screen-row pending">⏳ Awaiting approval</div>
-          <div style="font-size:9px;color:#888;padding:4px 4px 0">12 Oak Lane · Left spot<br>Jun 15 – Jun 22</div>
-        </div>
-      </div>
-      <div class="character" style="margin-top:10px">
-        <div class="char-face">
-          <svg class="face" width="36" height="36" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="#f5e6c8" stroke="#333" stroke-width="1.5"/>
-            <ellipse cx="16" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="16" cy="21" r="2.5" fill="#333"/>
-            <ellipse cx="28" cy="20" rx="5" ry="5.5" fill="#fff" stroke="#333" stroke-width="1"/>
-            <circle cx="28" cy="21" r="2.5" fill="#333"/>
-            <path d="M16 30 Q22 27 28 30" stroke="#555" stroke-width="1.2" fill="none"/>
-            <path d="M4 14 Q8 5 22 4 Q36 5 40 14" fill="#8B4513" stroke="#8B4513" stroke-width="1"/>
-            <text x="34" y="12" style="font:700 8px sans-serif;fill:#6af">z</text>
-            <text x="38" y="8" style="font:700 10px sans-serif;fill:#adf">z</text>
-          </svg>
-        </div>
-        <div class="bubble">Checking my phone every 5 mins… 😬</div>
-      </div>
-    </div>
-
-    <!-- Panel 6 -->
-    <div class="panel" style="background:#f0faf6;border-color:#9fe1cb">
-      <div class="panel-num" style="color:rgba(10,110,80,0.15)">6</div>
-      <h3 style="color:#0a6e50">You're approved! 🎉</h3>
-      <div class="subtitle" style="color:#1a9e75">You'll get an email notification right away</div>
-      <div class="notif">
-        <div class="notif-header">
-          <div class="notif-dot" style="background:#1a9e75"></div>
-          <span class="notif-app" style="color:#1a9e75">ParkMontage</span>
-          <span style="font-size:9px;color:#bbb;margin-left:auto">just now</span>
-        </div>
-        <div class="notif-body">🎉 Your request for the Left spot at <strong>12 Oak Lane</strong> is approved! Jun 15–22, 6AM–6PM.</div>
-      </div>
-      <div class="result-box success" style="margin-top:10px">
-        <span class="icon">
-          <span class="pulse" style="display:inline-block">✅</span>
-        </span>
-        <strong>Space confirmed!</strong>
-        <p>Available from 6AM on Jun 15<br>until 6PM on Jun 22</p>
-      </div>
-    </div>
-
-  </div><!-- /panels -->
-
-  <div class="tip">
-    <span class="tip-icon">💡</span>
-    <span>You can request multiple spaces in one go — handy if you're not sure who'll approve first. The first approval wins!</span>
-  </div>
-
-</div><!-- /section find -->
 
 
 <div class="spacer"></div>
