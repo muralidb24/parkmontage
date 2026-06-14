@@ -631,11 +631,6 @@ function FindSpaceTab({ myHome, showToast }) {
         h('button',{className:'btn btn-primary btn-block',onClick:search,disabled:loading},
           loading ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-search'}),
           loading ? 'Searching...' : 'Find available spaces'
-        ),
-        h('p',{style:{fontSize:11,color:'#aaa',textAlign:'center',marginTop:7}},
-          browseMode
-            ? h('span',null, h('i',{className:'ti ti-calendar-search',style:{fontSize:12,verticalAlign:'middle',marginRight:3}}), 'No specific dates? Tap to browse all available spaces.')
-            : h('span',null, h('i',{className:'ti ti-x',style:{fontSize:11,verticalAlign:'middle',marginRight:3}}), 'Clear dates to browse all available spaces')
         )
       )
     ),
@@ -719,7 +714,7 @@ function FindSpaceTab({ myHome, showToast }) {
                 h('i',{className:'ti ti-calendar'}),
                 h('p',null,'What dates do you need? Must fall within the space\'s availability window.')
               ),
-              // "Use full window" shortcut — computes intersection of all selected spaces
+              // "Use full window" shortcut
               h('button',{
                 style:{width:'100%',background:'#f0faf6',border:'1.5px solid #9fe1cb',borderRadius:8,
                   padding:'7px 10px',fontSize:12,fontWeight:600,color:'#0a6e50',cursor:'pointer',
@@ -744,7 +739,7 @@ function FindSpaceTab({ myHome, showToast }) {
                 h('div',{className:'input-group',style:{marginBottom:0}},
                   h('label',null,'To date'),
                   h('input',{type:'date',value:modalTo,
-                    min:modalFrom || results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.from_date>m?sp.from_date:m, results.filter(sp=>selected[sp.id])[0]?.from_date||todayStr()),
+                    min:modalFrom||results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.from_date>m?sp.from_date:m, results.filter(sp=>selected[sp.id])[0]?.from_date||todayStr()),
                     max:results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.to_date<m?sp.to_date:m, results.filter(sp=>selected[sp.id])[0]?.to_date||''),
                     disabled:!modalFrom,
                     onChange:e=>setModalTo(e.target.value)})
@@ -1727,21 +1722,21 @@ function App() {
       const seenKey = 'parkmontage-seen-' + myHome.id;
       const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
 
-      // Get all sessions involving this homeowner
+      // Renter sessions only → drives My Sessions badge
+      // Provider sessions only → drives My Spaces badge (via unreadSessions set)
       const [mySessions, provSessions] = await Promise.all([
         dbFetch('sessions?renter_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
         dbFetch('sessions?provider_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
       ]);
-      const allSessionIds = [
-        ...(Array.isArray(mySessions)?mySessions:[]),
-        ...(Array.isArray(provSessions)?provSessions:[])
-      ].map(s=>s.id);
+      const renterSessionIds  = (Array.isArray(mySessions)  ? mySessions  : []).map(s=>s.id);
+      const providerSessionIds = (Array.isArray(provSessions) ? provSessions : []).map(s=>s.id);
+      const allSessionIds = [...renterSessionIds, ...providerSessionIds];
 
-      if (allSessionIds.length === 0) { setUnreadCount(0); return; }
+      if (allSessionIds.length === 0) { setUnreadCount(0); setUnreadSessions(new Set()); return; }
 
-      // Fetch all messages from others in my sessions, newer than last seen
+      // Fetch unread messages separately for renter and provider sessions
       const unreadSet = new Set();
-      let totalUnread = 0;
+      let renterUnread = 0;
       for (const sessionId of allSessionIds) {
         const lastSeen = seen[sessionId] || '1970-01-01T00:00:00Z';
         const msgs = await dbFetch(
@@ -1751,12 +1746,15 @@ function App() {
           '&select=id'
         );
         if (Array.isArray(msgs) && msgs.length > 0) {
-          totalUnread += msgs.length;
           unreadSet.add(sessionId);
+          // Only count towards My Sessions badge if this is a renter session
+          if (renterSessionIds.includes(sessionId)) {
+            renterUnread += msgs.length;
+          }
         }
       }
-      setUnreadCount(totalUnread);
-      setUnreadSessions(unreadSet);
+      setUnreadCount(renterUnread);   // My Sessions badge — renter only
+      setUnreadSessions(unreadSet);   // My Spaces badge uses this set for provider sessions
     };
     poll();
     const interval = setInterval(poll, 10000);
