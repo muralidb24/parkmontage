@@ -719,15 +719,34 @@ function FindSpaceTab({ myHome, showToast }) {
                 h('i',{className:'ti ti-calendar'}),
                 h('p',null,'What dates do you need? Must fall within the space\'s availability window.')
               ),
+              // "Use full window" shortcut — computes intersection of all selected spaces
+              h('button',{
+                style:{width:'100%',background:'#f0faf6',border:'1.5px solid #9fe1cb',borderRadius:8,
+                  padding:'7px 10px',fontSize:12,fontWeight:600,color:'#0a6e50',cursor:'pointer',
+                  marginBottom:8,display:'flex',alignItems:'center',justifyContent:'center',gap:5},
+                onClick:()=>{
+                  const sel = results.filter(sp => selected[sp.id]);
+                  const maxFrom = sel.reduce((m,sp) => sp.from_date > m ? sp.from_date : m, sel[0].from_date);
+                  const minTo   = sel.reduce((m,sp) => sp.to_date   < m ? sp.to_date   : m, sel[0].to_date);
+                  setModalFrom(maxFrom);
+                  setModalTo(minTo);
+                }
+              }, h('i',{className:'ti ti-calendar-check',style:{fontSize:14}}), 'Use full available window'),
+
               h('div',{className:'row2',style:{marginBottom:4}},
                 h('div',{className:'input-group',style:{marginBottom:0}},
                   h('label',null,'From date'),
-                  h('input',{type:'date',value:modalFrom,min:todayStr(),
+                  h('input',{type:'date',value:modalFrom,
+                    min:results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.from_date>m?sp.from_date:m, results.filter(sp=>selected[sp.id])[0]?.from_date||todayStr()),
+                    max:results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.to_date<m?sp.to_date:m, results.filter(sp=>selected[sp.id])[0]?.to_date||''),
                     onChange:e=>{ setModalFrom(e.target.value); if(modalTo && modalTo < e.target.value) setModalTo(''); }})
                 ),
                 h('div',{className:'input-group',style:{marginBottom:0}},
                   h('label',null,'To date'),
-                  h('input',{type:'date',value:modalTo,min:modalFrom||todayStr(),disabled:!modalFrom,
+                  h('input',{type:'date',value:modalTo,
+                    min:modalFrom || results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.from_date>m?sp.from_date:m, results.filter(sp=>selected[sp.id])[0]?.from_date||todayStr()),
+                    max:results.filter(sp=>selected[sp.id]).reduce((m,sp)=>sp.to_date<m?sp.to_date:m, results.filter(sp=>selected[sp.id])[0]?.to_date||''),
+                    disabled:!modalFrom,
                     onChange:e=>setModalTo(e.target.value)})
                 )
               ),
