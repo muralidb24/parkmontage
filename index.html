@@ -247,6 +247,37 @@ const shortAddress = (address) => {
   return address.replace(/\s+(Road|Rd|Lane|Ln|Street|St|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Court|Ct|Place|Pl|Way|Terrace|Ter|Circle|Cir|Trail|Trl|Run|Loop)\.?$/i, '');
 };
 
+// Normalize an address for flexible roster matching:
+// lowercase, trim, collapse whitespace, expand common street-type abbreviations
+// to a canonical form so "12 Oak Ln" / "12 oak lane" / "12  Oak  Ln." all match.
+const STREET_TYPE_MAP = {
+  'rd':'road','road':'road',
+  'ln':'lane','lane':'lane',
+  'st':'street','street':'street',
+  'ave':'avenue','av':'avenue','avenue':'avenue',
+  'dr':'drive','drive':'drive',
+  'blvd':'boulevard','boulevard':'boulevard',
+  'ct':'court','court':'court',
+  'pl':'place','place':'place',
+  'way':'way',
+  'ter':'terrace','terrace':'terrace',
+  'cir':'circle','circle':'circle',
+  'trl':'trail','trail':'trail',
+  'run':'run',
+  'loop':'loop',
+  'path':'path',
+};
+const normalizeAddress = (address) => {
+  if (!address) return '';
+  const words = address
+    .toLowerCase()
+    .replace(/[.,]/g, '')        // drop periods/commas
+    .trim()
+    .split(/\s+/)
+    .map(w => STREET_TYPE_MAP[w] || w);
+  return words.join(' ');
+};
+
 const todayStr = () => {
   // Use EST timezone to avoid date showing as yesterday during early morning hours
   const now = new Date();
@@ -347,7 +378,28 @@ function SignupScreen({ onSwitch, userEmail, onComplete }) {
       setError('Invalid community code. Please check with your community admin.'); return;
     }
     setLoading(true); setError('');
-    const address = name.trim() ? number.trim() + ' ' + street.trim() : '';
+    const address = number.trim() + ' ' + street.trim();
+
+    // Validate the address against the community roster (flexible match)
+    const targetNorm = normalizeAddress(address);
+    let roster = null;
+    try {
+      roster = await dbFetch('community_homes?select=address');
+    } catch (e) {
+      console.warn('Roster fetch error:', e);
+    }
+    const rosterList = Array.isArray(roster) ? roster : null;
+    if (!rosterList) {
+      setLoading(false);
+      setError('Could not verify your address right now. Please try again in a moment.');
+      return;
+    }
+    const isOnRoster = rosterList.some(r => normalizeAddress(r.address) === targetNorm);
+    if (!isOnRoster) {
+      setLoading(false);
+      setError("We couldn't find that address in the Montage community roster. Please check the spelling, or contact your community admin if you believe this is an error.");
+      return;
+    }
 
     // Retry up to 3 times with increasing delays
     // This handles timing issues where the auth session isn't fully ready yet
@@ -412,10 +464,10 @@ function SignupScreen({ onSwitch, userEmail, onComplete }) {
       h('input',{type:'text',placeholder:'Enter code',value:code,onChange:e=>setCode(e.target.value),
         style:{letterSpacing:'0.1em',fontWeight:500}})
     ),
-    error && h('p',{style:{color:'#c0392b',fontSize:13,marginBottom:12}},error),
+    error && h('p',{style:{color:'#c0392b',fontSize:13,marginBottom:12,lineHeight:1.5}},error),
     h('button',{className:'btn btn-primary btn-block',onClick:submit,disabled:loading},
       loading ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-check'}),
-      loading ? 'Creating account...' : 'Create account'
+      loading ? 'Verifying address...' : 'Create account'
     ),
     h('div',{style:{marginTop:20,textAlign:'center'}},
       h('span',{style:{fontSize:13,color:'#aaa'}},'Already have an account? '),
@@ -1722,19 +1774,19 @@ function App() {
       const seenKey = 'parkmontage-seen-' + myHome.id;
       const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
 
-      // Renter sessions only → drives My Sessions badge
-      // Provider sessions only → drives My Spaces badge (via unreadSessions set)
+      // Renter sessions -> My Sessions badge
+      // Provider sessions -> My Spaces badge only
       const [mySessions, provSessions] = await Promise.all([
         dbFetch('sessions?renter_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
         dbFetch('sessions?provider_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
       ]);
-      const renterSessionIds  = (Array.isArray(mySessions)  ? mySessions  : []).map(s=>s.id);
+      const renterSessionIds   = (Array.isArray(mySessions)  ? mySessions  : []).map(s=>s.id);
       const providerSessionIds = (Array.isArray(provSessions) ? provSessions : []).map(s=>s.id);
       const allSessionIds = [...renterSessionIds, ...providerSessionIds];
 
       if (allSessionIds.length === 0) { setUnreadCount(0); setUnreadSessions(new Set()); return; }
 
-      // Fetch unread messages separately for renter and provider sessions
+      // Count unreads — only renter sessions feed the My Sessions badge
       const unreadSet = new Set();
       let renterUnread = 0;
       for (const sessionId of allSessionIds) {
@@ -1747,14 +1799,11 @@ function App() {
         );
         if (Array.isArray(msgs) && msgs.length > 0) {
           unreadSet.add(sessionId);
-          // Only count towards My Sessions badge if this is a renter session
-          if (renterSessionIds.includes(sessionId)) {
-            renterUnread += msgs.length;
-          }
+          if (renterSessionIds.includes(sessionId)) renterUnread += msgs.length;
         }
       }
-      setUnreadCount(renterUnread);   // My Sessions badge — renter only
-      setUnreadSessions(unreadSet);   // My Spaces badge uses this set for provider sessions
+      setUnreadCount(renterUnread);  // My Sessions badge — renter only
+      setUnreadSessions(unreadSet);  // My Spaces uses this for provider sessions
     };
     poll();
     const interval = setInterval(poll, 10000);
