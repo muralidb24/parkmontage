@@ -543,13 +543,48 @@ function FindSpaceTab({ myHome, showToast }) {
         url += '&order=from_date.asc';
       }
       const data = await dbFetch(url);
+      const rawResults = Array.isArray(data) ? data : [];
+
       // Filter out spaces the user already has an active session for
       const mySessions = await dbFetch(
         'sessions?select=space_id&renter_home_id=eq.' + myHome.id +
         '&status=in.("pending","approved","inuse")'
       );
       const mySpaceIds = new Set((Array.isArray(mySessions)?mySessions:[]).map(s=>s.space_id));
-      setResults((Array.isArray(data)?data:[]).filter(sp=>!mySpaceIds.has(sp.id)));
+      const afterSessionFilter = rawResults.filter(sp=>!mySpaceIds.has(sp.id));
+
+      // Filter by provider visibility settings:
+      //  'all'        -> visible to everyone
+      //  'all_except' -> visible to everyone EXCEPT homes in that provider's neighbor_list
+      //  'selected'   -> visible ONLY to homes in that provider's neighbor_list
+      //  null/unset   -> not visible to anyone yet
+      const providerIds = [...new Set(afterSessionFilter.map(sp => sp.home_id))];
+      let neighborRows = [];
+      if (providerIds.length > 0) {
+        const idsFilter = providerIds.join(',');
+        const rows = await dbFetch(
+          'neighbor_list?select=home_id,neighbor_home_id&home_id=in.(' + idsFilter + ')'
+        );
+        neighborRows = Array.isArray(rows) ? rows : [];
+      }
+      // Map: provider home_id -> Set of neighbor_home_ids referenced
+      const neighborMap = {};
+      neighborRows.forEach(r => {
+        if (!neighborMap[r.home_id]) neighborMap[r.home_id] = new Set();
+        neighborMap[r.home_id].add(r.neighbor_home_id);
+      });
+
+      const visibleResults = afterSessionFilter.filter(sp => {
+        const mode = sp.homes?.visibility_mode;
+        if (!mode) return false; // not yet configured — invisible to everyone
+        if (mode === 'all') return true;
+        const listed = neighborMap[sp.home_id] || new Set();
+        if (mode === 'all_except') return !listed.has(myHome.id);
+        if (mode === 'selected') return listed.has(myHome.id);
+        return false;
+      });
+
+      setResults(visibleResults);
     } catch(err) {
       showToast('Error searching spaces');
       console.error('Search error:', err);
@@ -1425,11 +1460,192 @@ function ChatModal({ session, myHome, onClose }) {
 // ─────────────────────────────────────────────
 //  Account tab
 // ─────────────────────────────────────────────
-function AccountTab({ myHome, user, showToast }) {
+// ─────────────────────────────────────────────
+//  Visibility Picker — used both as the mandatory
+//  post-signup prompt and the Account tab editor
+// ─────────────────────────────────────────────
+function VisibilityPicker({ myHome, onSaved, onSkip, mandatory }) {
+  const [mode, setMode] = useState(myHome.visibility_mode || 'all');
+  const [otherHomes, setOtherHomes] = useState(null); // [{id, address, owner_name}]
+  const [picked, setPicked] = useState({}); // {home_id: true}
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const homes = await dbFetch(
+          'homes?select=id,address,owner_name&id=neq.' + myHome.id + '&order=address.asc'
+        );
+        setOtherHomes(Array.isArray(homes) ? homes : []);
+      } catch (e) {
+        console.warn('Failed to load homes list:', e);
+        setOtherHomes([]);
+      }
+      // Pre-populate picked[] from existing neighbor_list rows, if editing
+      try {
+        const existing = await dbFetch(
+          'neighbor_list?select=neighbor_home_id&home_id=eq.' + myHome.id
+        );
+        if (Array.isArray(existing)) {
+          const p = {};
+          existing.forEach(r => { p[r.neighbor_home_id] = true; });
+          setPicked(p);
+        }
+      } catch (e) {
+        console.warn('Failed to load existing neighbor list:', e);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const togglePicked = (id) => setPicked(p => ({ ...p, [id]: !p[id] }));
+
+  const pickedCount = Object.values(picked).filter(Boolean).length;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      // Update visibility_mode on homes
+      await dbFetch('homes?id=eq.' + myHome.id, {
+        method: 'PATCH',
+        prefer: 'return=minimal',
+        body: { visibility_mode: mode }
+      });
+
+      // Replace neighbor_list rows for this home
+      await dbFetch('neighbor_list?home_id=eq.' + myHome.id, { method: 'DELETE' });
+
+      if (mode === 'all_except' || mode === 'selected') {
+        const ids = Object.keys(picked).filter(id => picked[id]);
+        if (ids.length > 0) {
+          await dbFetch('neighbor_list', {
+            method: 'POST',
+            prefer: 'return=minimal',
+            body: ids.map(id => ({ home_id: myHome.id, neighbor_home_id: id }))
+          });
+        }
+      }
+      setSaving(false);
+      onSaved({ ...myHome, visibility_mode: mode });
+    } catch (e) {
+      console.warn('Failed to save visibility settings:', e);
+      setSaving(false);
+    }
+  };
+
+  const needsList = mode === 'all_except' || mode === 'selected';
+
+  return h('div',{className:'modal-overlay'},
+    h('div',{className:'modal'},
+      h('div',{className:'modal-handle'}),
+      h('h2',{style:{fontSize:18,fontWeight:700,marginBottom:4}},
+        mandatory ? '👋 Who can see your spaces?' : 'Who can see your spaces'
+      ),
+      h('p',{style:{fontSize:13,color:'#888',marginBottom:16,lineHeight:1.5}},
+        mandatory
+          ? 'Before you can share parking, choose which Montage neighbors are allowed to see your available spaces. You can change this anytime in Account.'
+          : 'Choose which Montage neighbors can see your available spaces.'
+      ),
+
+      // Three-way choice
+      h('div',{style:{display:'flex',flexDirection:'column',gap:8,marginBottom:14}},
+        [
+          {val:'all',        icon:'ti-world',      label:'Everyone in Montage',        sub:'All registered neighbors can see your spaces'},
+          {val:'all_except', icon:'ti-user-minus', label:'Everyone except a few',       sub:'Visible to all, except homes you block below'},
+          {val:'selected',   icon:'ti-user-check',  label:'Only specific neighbors',     sub:'Visible only to the homes you choose below'},
+        ].map(opt => h('div',{
+          key:opt.val,
+          onClick:()=>setMode(opt.val),
+          style:{
+            display:'flex',alignItems:'flex-start',gap:10,padding:'10px 12px',borderRadius:10,
+            border: mode===opt.val ? '2px solid #1a9e75' : '1.5px solid #e5e5e2',
+            background: mode===opt.val ? '#f0faf6' : '#fff',
+            cursor:'pointer'
+          }
+        },
+          h('i',{className:'ti '+opt.icon, style:{fontSize:18,color: mode===opt.val?'#1a9e75':'#aaa', marginTop:1}}),
+          h('div',{style:{flex:1}},
+            h('div',{style:{fontSize:14,fontWeight:700,color:'#111'}},opt.label),
+            h('div',{style:{fontSize:12,color:'#888',marginTop:1}},opt.sub)
+          ),
+          h('div',{style:{
+            width:18,height:18,borderRadius:'50%',flexShrink:0,marginTop:2,
+            border: mode===opt.val ? 'none' : '2px solid #ccc',
+            background: mode===opt.val ? '#1a9e75' : 'transparent',
+            display:'flex',alignItems:'center',justifyContent:'center'
+          }}, mode===opt.val && h('i',{className:'ti ti-check',style:{color:'#fff',fontSize:11}}))
+        ))
+      ),
+
+      // Checklist — only shown for all_except / selected
+      needsList && h('div',{style:{marginBottom:14}},
+        h('div',{style:{fontSize:12,fontWeight:700,color:'#666',marginBottom:8,textTransform:'uppercase',letterSpacing:'0.04em'}},
+          mode === 'all_except'
+            ? `Block these homes${pickedCount>0 ? ' (' + pickedCount + ' selected)' : ''}`
+            : `Allow only these homes${pickedCount>0 ? ' (' + pickedCount + ' selected)' : ''}`
+        ),
+        otherHomes === null
+          ? h('div',{style:{textAlign:'center',padding:20}}, h('span',{className:'spinner spinner-dark'}))
+          : otherHomes.length === 0
+          ? h('p',{style:{fontSize:13,color:'#aaa',textAlign:'center',padding:12}},'No other neighbors have signed up yet.')
+          : h('div',{style:{maxHeight:240,overflowY:'auto',display:'flex',flexDirection:'column',gap:6}},
+              otherHomes.map(home => {
+                const isPicked = !!picked[home.id];
+                return h('div',{
+                  key:home.id,
+                  onClick:()=>togglePicked(home.id),
+                  style:{
+                    display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,
+                    border: isPicked ? '1.5px solid #1a9e75' : '1.5px solid #eee',
+                    background: isPicked ? '#f0faf6' : '#fff',
+                    cursor:'pointer'
+                  }
+                },
+                  h('div',{style:{
+                    width:18,height:18,borderRadius:5,flexShrink:0,
+                    border: isPicked ? 'none' : '2px solid #ccc',
+                    background: isPicked ? '#1a9e75' : 'transparent',
+                    display:'flex',alignItems:'center',justifyContent:'center'
+                  }}, isPicked && h('i',{className:'ti ti-check',style:{color:'#fff',fontSize:11}})),
+                  h(Avatar,{name:home.owner_name,size:28}),
+                  h('div',null,
+                    h('div',{style:{fontSize:13,fontWeight:600,color:'#111'}},home.address),
+                    h('div',{style:{fontSize:11,color:'#aaa'}},home.owner_name)
+                  )
+                );
+              })
+            )
+      ),
+
+      h('div',{style:{display:'flex',gap:8}},
+        !mandatory && onSkip && h('button',{className:'btn',style:{flex:1,justifyContent:'center'},onClick:onSkip},'Cancel'),
+        h('button',{
+          className:'btn btn-primary',
+          style:{flex:1,justifyContent:'center'},
+          onClick:save,
+          disabled:saving
+        },
+          saving ? h('span',{className:'spinner'}) : h('i',{className:'ti ti-check'}),
+          saving ? 'Saving...' : 'Save'
+        )
+      )
+    )
+  );
+}
+
+function AccountTab({ myHome, user, showToast, onHomeUpdated }) {
   const [type, setType] = useState('feedback');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [editingVisibility, setEditingVisibility] = useState(false);
+
+  const visLabel = {
+    all: { icon:'ti-world', text:'Everyone in Montage' },
+    all_except: { icon:'ti-user-minus', text:'Everyone except a few' },
+    selected: { icon:'ti-user-check', text:'Only specific neighbors' },
+  }[myHome?.visibility_mode] || { icon:'ti-alert-circle', text:'Not set yet' };
 
   const submit = async () => {
     if (!message.trim()) return;
@@ -1460,6 +1676,24 @@ function AccountTab({ myHome, user, showToast }) {
           h('div',{className:'card-sub'},myHome?.address),
           h('div',{className:'card-sub'},user?.email)
         )
+      )
+    ),
+
+    // Visibility settings card
+    h('div',{className:'card',style:{marginBottom:10}},
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
+        h('div',{style:{flex:1}},
+          h('div',{className:'card-title',style:{marginBottom:4}},'Who can see my spaces'),
+          h('div',{style:{display:'flex',alignItems:'center',gap:6,color:'#1a9e75',fontSize:13,fontWeight:600}},
+            h('i',{className:'ti '+visLabel.icon,style:{fontSize:15}}),
+            visLabel.text
+          )
+        ),
+        h('button',{
+          className:'btn',
+          style:{fontSize:13,padding:'7px 12px'},
+          onClick:()=>setEditingVisibility(true)
+        },'Edit')
       )
     ),
 
@@ -1522,7 +1756,19 @@ function AccountTab({ myHome, user, showToast }) {
           window.location.replace(window.location.origin + window.location.pathname + '?signout=' + Date.now());
         }
       },h('i',{className:'ti ti-logout'}),'Sign out')
-    )
+    ),
+
+    // Visibility editor modal
+    editingVisibility && h(VisibilityPicker,{
+      myHome,
+      mandatory:false,
+      onSkip:()=>setEditingVisibility(false),
+      onSaved:(updatedHome)=>{
+        setEditingVisibility(false);
+        onHomeUpdated && onHomeUpdated(updatedHome);
+        showToast('Visibility settings saved!');
+      }
+    })
   );
 }
 
@@ -1530,7 +1776,7 @@ function AccountTab({ myHome, user, showToast }) {
 //  Main App
 // ─────────────────────────────────────────────
 function App() {
-  const [authState, setAuthState] = useState('loading'); // loading | loggedout | needsprofile | ready
+  const [authState, setAuthState] = useState('loading'); // loading | loggedout | needsprofile | needsvisibility | ready
   const [authScreen, setAuthScreen] = useState('login'); // login | signup
   const [user, setUser] = useState(null);
   const [myHome, setMyHome] = useState(null);
@@ -1625,7 +1871,7 @@ function App() {
           const home = await loadHome(storedUser.email);
           if (!home) { setAuthState('needsprofile'); return; }
           setMyHome(home);
-          setAuthState('ready');
+          setAuthState(home.visibility_mode ? 'ready' : 'needsvisibility');
           return;
         }
         // Check URL hash for fresh magic link token
@@ -1654,7 +1900,7 @@ function App() {
                 const home = await loadHome(userEmail);
                 if (!home) { setAuthState('needsprofile'); return; }
                 setMyHome(home);
-                setAuthState('ready');
+                setAuthState(home.visibility_mode ? 'ready' : 'needsvisibility');
                 return;
               }
             } catch(e) { console.warn('JWT decode error:', e); }
@@ -1822,7 +2068,13 @@ function App() {
   if (authState==='needsprofile') return h(SignupScreen,{
     onSwitch:async()=>{ try{await db.auth.signOut({scope:'local'});}catch(e){} try{localStorage.clear();}catch(e){} window.location.reload(true); },
     userEmail: user?.email||'',
-    onComplete: (home) => { setMyHome(home); setAuthState('ready'); }
+    onComplete: (home) => { setMyHome(home); setAuthState('needsvisibility'); }
+  });
+
+  if (authState==='needsvisibility') return h(VisibilityPicker,{
+    myHome,
+    mandatory:true,
+    onSaved:(updatedHome) => { setMyHome(updatedHome); setAuthState('ready'); }
   });
 
   const headers = {
@@ -1864,7 +2116,7 @@ function App() {
         setUnreadSessions(prev=>{ const n=new Set(prev); n.delete(sess.id); return n; });
         setChatSession(sess);
       }}),
-      tab==='account'  && h(AccountTab, {myHome, user, showToast}),
+      tab==='account'  && h(AccountTab, {myHome, user, showToast, onHomeUpdated:setMyHome}),
     ),
     chatSession && h(ChatModal,{session:chatSession,myHome,onClose:()=>setChatSession(null)}),
     h(Toast,{msg:toast}),
