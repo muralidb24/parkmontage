@@ -198,11 +198,21 @@ async function dbFetch(path, options = {}) {
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined
   });
+  // Safely handle empty bodies (204 No Content, or return=minimal) —
+  // calling res.json() on an empty body throws, which previously caused
+  // silent failures in callers using prefer: 'return=minimal'.
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (e) { data = text; }
+  }
+  if (!res.ok) {
+    console.warn('dbFetch error', res.status, path, data);
+  }
   if (options.returnSingle) {
-    const data = await res.json();
     return Array.isArray(data) ? data[0] || null : data;
   }
-  return res.json();
+  return data;
 }
 
 // ─────────────────────────────────────────────
