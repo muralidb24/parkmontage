@@ -207,7 +207,16 @@ async function dbFetch(path, options = {}) {
     try { data = JSON.parse(text); } catch (e) { data = text; }
   }
   if (!res.ok) {
+    // Surface real HTTP/Postgres errors (RLS denials, constraint violations, etc.)
+    // so callers' try/catch blocks actually trigger instead of silently
+    // treating a failed write as success.
     console.warn('dbFetch error', res.status, path, data);
+    const err = new Error(
+      (data && (data.message || data.hint)) || ('Request failed with status ' + res.status)
+    );
+    err.status = res.status;
+    err.body = data;
+    throw err;
   }
   if (options.returnSingle) {
     return Array.isArray(data) ? data[0] || null : data;
@@ -420,26 +429,28 @@ function SignupScreen({ onSwitch, userEmail, onComplete }) {
         // Wait before retrying — gives auth session time to establish
         await new Promise(resolve => setTimeout(resolve, attempt * 1000));
       }
-      const result = await dbFetch('homes', {
-        method: 'POST',
-        prefer: 'return=representation',
-        body: {
-          address,
-          owner_name: name.trim(),
-          owner_email: userEmail,
+      try {
+        const result = await dbFetch('homes', {
+          method: 'POST',
+          prefer: 'return=representation',
+          body: {
+            address,
+            owner_name: name.trim(),
+            owner_email: userEmail,
+          }
+        });
+        if (Array.isArray(result) && result.length > 0) {
+          data = result[0];
+          err = null;
+          break;
+        } else if (result && typeof result === 'object') {
+          data = result;
+          err = null;
+          break;
         }
-      });
-      if (Array.isArray(result) && result.length > 0) {
-        data = result[0];
-        err = null;
-        break;
-      } else if (result?.code || result?.message) {
-        err = result;
-        console.warn('Signup attempt ' + attempt + ' failed:', result);
-      } else if (result && !result.code) {
-        data = result;
-        err = null;
-        break;
+      } catch (e) {
+        err = e;
+        console.warn('Signup attempt ' + attempt + ' failed:', e);
       }
     }
 
@@ -1480,6 +1491,7 @@ function VisibilityPicker({ myHome, onSaved, onSkip, mandatory }) {
   const [picked, setPicked] = useState({}); // {home_id: true}
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -1515,6 +1527,7 @@ function VisibilityPicker({ myHome, onSaved, onSkip, mandatory }) {
 
   const save = async () => {
     setSaving(true);
+    setSaveError('');
     try {
       // Update visibility_mode on homes
       await dbFetch('homes?id=eq.' + myHome.id, {
@@ -1541,6 +1554,7 @@ function VisibilityPicker({ myHome, onSaved, onSkip, mandatory }) {
     } catch (e) {
       console.warn('Failed to save visibility settings:', e);
       setSaving(false);
+      setSaveError('Could not save your settings. Please try again. (' + (e.message || 'unknown error') + ')');
     }
   };
 
@@ -1627,6 +1641,8 @@ function VisibilityPicker({ myHome, onSaved, onSkip, mandatory }) {
               })
             )
       ),
+
+      saveError && h('p',{style:{color:'#c0392b',fontSize:12,marginBottom:10,lineHeight:1.5}},saveError),
 
       h('div',{style:{display:'flex',gap:8}},
         !mandatory && onSkip && h('button',{className:'btn',style:{flex:1,justifyContent:'center'},onClick:onSkip},'Cancel'),
@@ -2019,47 +2035,51 @@ function App() {
   useEffect(()=>{
     if (!myHome) return;
     const poll = async () => {
-      // Count pending requests for My Spaces badge
-      const pendData = await dbFetch(
-        'sessions?provider_home_id=eq.' + myHome.id + '&status=eq.pending&select=id'
-      );
-      setPendingCount(Array.isArray(pendData) ? pendData.length : 0);
-
-      // Count unread messages — messages sent after last seen timestamp
-      // We store last-seen timestamps in localStorage keyed by session id
-      const seenKey = 'parkmontage-seen-' + myHome.id;
-      const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
-
-      // Renter sessions -> My Sessions badge
-      // Provider sessions -> My Spaces badge only
-      const [mySessions, provSessions] = await Promise.all([
-        dbFetch('sessions?renter_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
-        dbFetch('sessions?provider_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
-      ]);
-      const renterSessionIds   = (Array.isArray(mySessions)  ? mySessions  : []).map(s=>s.id);
-      const providerSessionIds = (Array.isArray(provSessions) ? provSessions : []).map(s=>s.id);
-      const allSessionIds = [...renterSessionIds, ...providerSessionIds];
-
-      if (allSessionIds.length === 0) { setUnreadCount(0); setUnreadSessions(new Set()); return; }
-
-      // Count unreads — only renter sessions feed the My Sessions badge
-      const unreadSet = new Set();
-      let renterUnread = 0;
-      for (const sessionId of allSessionIds) {
-        const lastSeen = seen[sessionId] || '1970-01-01T00:00:00Z';
-        const msgs = await dbFetch(
-          'messages?session_id=eq.' + sessionId +
-          '&sender_home_id=neq.' + myHome.id +
-          '&created_at=gt.' + encodeURIComponent(lastSeen) +
-          '&select=id'
+      try {
+        // Count pending requests for My Spaces badge
+        const pendData = await dbFetch(
+          'sessions?provider_home_id=eq.' + myHome.id + '&status=eq.pending&select=id'
         );
-        if (Array.isArray(msgs) && msgs.length > 0) {
-          unreadSet.add(sessionId);
-          if (renterSessionIds.includes(sessionId)) renterUnread += msgs.length;
+        setPendingCount(Array.isArray(pendData) ? pendData.length : 0);
+
+        // Count unread messages — messages sent after last seen timestamp
+        // We store last-seen timestamps in localStorage keyed by session id
+        const seenKey = 'parkmontage-seen-' + myHome.id;
+        const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+
+        // Renter sessions -> My Sessions badge
+        // Provider sessions -> My Spaces badge only
+        const [mySessions, provSessions] = await Promise.all([
+          dbFetch('sessions?renter_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
+          dbFetch('sessions?provider_home_id=eq.' + myHome.id + '&status=in.("pending","approved","inuse","released_by_renter")&select=id'),
+        ]);
+        const renterSessionIds   = (Array.isArray(mySessions)  ? mySessions  : []).map(s=>s.id);
+        const providerSessionIds = (Array.isArray(provSessions) ? provSessions : []).map(s=>s.id);
+        const allSessionIds = [...renterSessionIds, ...providerSessionIds];
+
+        if (allSessionIds.length === 0) { setUnreadCount(0); setUnreadSessions(new Set()); return; }
+
+        // Count unreads — only renter sessions feed the My Sessions badge
+        const unreadSet = new Set();
+        let renterUnread = 0;
+        for (const sessionId of allSessionIds) {
+          const lastSeen = seen[sessionId] || '1970-01-01T00:00:00Z';
+          const msgs = await dbFetch(
+            'messages?session_id=eq.' + sessionId +
+            '&sender_home_id=neq.' + myHome.id +
+            '&created_at=gt.' + encodeURIComponent(lastSeen) +
+            '&select=id'
+          );
+          if (Array.isArray(msgs) && msgs.length > 0) {
+            unreadSet.add(sessionId);
+            if (renterSessionIds.includes(sessionId)) renterUnread += msgs.length;
+          }
         }
+        setUnreadCount(renterUnread);  // My Sessions badge — renter only
+        setUnreadSessions(unreadSet);  // My Spaces uses this for provider sessions
+      } catch (e) {
+        console.warn('Badge polling error:', e);
       }
-      setUnreadCount(renterUnread);  // My Sessions badge — renter only
-      setUnreadSessions(unreadSet);  // My Spaces uses this for provider sessions
     };
     poll();
     const interval = setInterval(poll, 10000);
